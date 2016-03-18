@@ -3,16 +3,9 @@ package util;
 /**
  * Created by Chaun on 3/13/2016.
  */
-public enum Constants {
-    resolution ("Resolution: "),
-    rgbs ("RGBS: ");
-
-    private String mName;
-    Constants(String name) {
-        mName = name;
-    }
-
-    public String getName() {
-        return mName;
-    }
+public class Constants {
+    public static final int CHUNK_SIZE = 4192;
+    public static final int HEADER_MSB = 0x10;
+    public static final int HEADER_LSB = 0x55;
+    public static final String IMAGE_REQEUST = "image_request";
 }

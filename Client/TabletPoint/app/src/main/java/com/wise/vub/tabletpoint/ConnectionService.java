@@ -8,6 +8,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.nfc.Tag;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
@@ -16,6 +17,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.wise.vub.tabletpoint.util.ClientConstants;
 import com.wise.vub.tabletpoint.util.Constants;
 import com.wise.vub.tabletpoint.util.ImageUpdater;
 
@@ -25,8 +27,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.UUID;
 
 import static java.lang.Math.round;
@@ -144,6 +149,7 @@ public class ConnectionService {
                 socket.connect();
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
+                tmpOut.write((ClientConstants.IMAGE_REQEUST + "\r\n").getBytes());
             } catch (IOException e) {
                 Log.e(TAG, "Sockets creation failed.", e);
             }
@@ -153,37 +159,67 @@ public class ConnectionService {
         }
 
         public void run() {
-            Log.d(TAG, "BEGINING mConnectedThread");
-//            byte[] buffer = new byte[1024];
-//            int bytes;
-            BufferedReader reader = new BufferedReader(new InputStreamReader(mmInStream));
-            boolean waitingForHeader = true;
-            ByteArrayOutputStream dataOutputStream = new ByteArrayOutputStream();
-            while (true) {
-                int size;
-                final Bitmap image;
-                try {
-                    Log.d(TAG, "Before update image0");
-                    String imageInfo = reader.readLine();
-                    Log.d(TAG, imageInfo);
-//                    dataOutputStream.write(buffer, 0, bytesRead);
-//                    byte[] data = dataOutputStream.toByteArray();
-//                    image = BitmapFactory.decodeByteArray(data, 0, data.length);
+            try {
+                Log.d(TAG, "BEGINING mConnectedThread");
+                boolean waitingForHeader = true;
+                ByteArrayOutputStream dataOutputStream = new ByteArrayOutputStream();
+                byte[] headers = new byte[6];
+                int headerIndex = 0;
+                int imageSize = 0;
+                int progress = 0;
+                while (true) {
+                    if (waitingForHeader) {
+                        byte[] headerBuffer = new byte[1];
+                        mmInStream.read(headerBuffer, 0, 1);
+                        Log.d(TAG, "Received Header Byte: " + headerBuffer[0]);
+                        headers[headerIndex++] = headerBuffer[0];
+                        if (headerIndex == 6) {
+                            if (headers[0] == ClientConstants.HEADER_MSB && headers[1] == ClientConstants.HEADER_LSB) {
+                                Log.d(TAG, "Header received.");
+                                byte[] imageSizeBuffer = Arrays.copyOfRange(headers, 2, 6);
+                                imageSize = ByteBuffer.wrap(imageSizeBuffer).getInt();
+                                progress = imageSize;
+                                Log.d(TAG, "Image size: " + String.valueOf(imageSize));
+                                waitingForHeader = false;
+                            } else {
+                                Log.d(TAG, "Header Incorrect");
+                                mmSocket.close();
+                                break;
+                            } // Header
+                        } // Loop when header is not fully read.
+                    } else {
+                        byte[] buffer = new byte[ClientConstants.CHUNK_SIZE];
+                        int byteRead = mmInStream.read(buffer);
+                        Log.d(TAG, "Read in data size: " + byteRead);
+                        Log.d(TAG, "Expecting." + (progress -=  byteRead));
+                        dataOutputStream.write(buffer, 0, byteRead);
 
-                    Log.d(TAG, "Before update image2");
-
-                    mActivity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.d(TAG, "Before update image");
-                            ImageView imageView = ((ImageView) mActivity.findViewById(R.id.image_view_presentation));
-                            imageView.setImageDrawable(mActivity.getDrawable(R.drawable.test));
+                        if (progress <= 0) {
+                            Log.d(TAG, "Data fully received.");
+                            final byte[] data = dataOutputStream.toByteArray();
+                            Log.d(TAG, "Data length: " + data.length);
+                            final Bitmap image = BitmapFactory.decodeByteArray(data, 0, imageSize);
+                            Log.d(TAG, "Bitmap is created");
+                            mActivity.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Log.d(TAG, "Before update image");
+                                    ImageView imageView = ((ImageView) mActivity.findViewById(R.id.image_view_presentation));
+                                    imageView.setImageBitmap(image);
+                                }
+                            });
+                            waitingForHeader = true;
+                            headerIndex = 0;
+                            imageSize = 0;
+                            progress = 0;
+                            dataOutputStream.reset();
+                            mmOutStream.write((ClientConstants.IMAGE_REQEUST + "\r\n").getBytes());
+                            Log.d(TAG, "New request out");
                         }
-                    });
-                } catch (IOException e) {
-                    Log.e(TAG, "Disconnected", e);
-                    ConnectionService.this.connect();
+                    }
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
 
