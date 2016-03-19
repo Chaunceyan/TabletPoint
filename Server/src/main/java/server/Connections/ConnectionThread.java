@@ -14,6 +14,7 @@ import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
 import javax.microedition.io.StreamConnection;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -53,10 +54,11 @@ public class ConnectionThread implements Runnable {
     }
 
     private class ConnectionService implements Runnable {
-        private String fileName;
+        private String fileName = "TempFile";
         private File tempImage;
         private ImageWriteParam param;
         private ImageWriter writer;
+        private OutputStream imageOut;
         private OutputStream out;
         private BufferedReader reader;
         private BufferedImage curScreenCapture, prevScreenCapture;
@@ -92,9 +94,10 @@ public class ConnectionThread implements Runnable {
             try {
                 String command = null;
                 while (true) {
-                    fileName = String.valueOf(System.currentTimeMillis());
                     tempImage = new File(fileName);
-                    writer.setOutput(ImageIO.createImageOutputStream(new FileOutputStream(tempImage)));
+                    tempImage.delete();
+                    imageOut = new FileOutputStream(tempImage);
+                    writer.setOutput( ImageIO.createImageOutputStream(imageOut));
                     command = reader.readLine();
                     if (command != null) {
                         System.out.println("Incoming command: " + command);
@@ -150,8 +153,10 @@ public class ConnectionThread implements Runnable {
                 // Image Out
                 out.write(data);
                 out.flush();
+                imageOut.flush();
+                imageOut.close();
                 writer.reset();
-                tempImage.delete();
+
             } catch (IOException e) {
                 e.printStackTrace();
                 System.out.println("Output error, stopping thread!");

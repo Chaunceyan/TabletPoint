@@ -1,5 +1,6 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.wise.vub.tabletpoint.PresentationFragment">
@@ -12,4 +13,6 @@
         android:scaleType="fitCenter"
         android:text="@string/hello_blank_fragment" />
 
-</FrameLayout>
+    <include layout="@layout/sample_scrible_view"/>
+
+</LinearLayout>
