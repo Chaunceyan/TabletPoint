@@ -1,45 +1,36 @@
 package com.wise.vub.tabletpoint;
 
 import android.app.Activity;
+import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.nfc.Tag;
-import android.os.AsyncTask;
 import android.os.Handler;
+import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
-import android.provider.SyncStateContract;
+import android.support.annotation.Nullable;
 import android.util.Log;
-import android.view.View;
 import android.widget.ImageView;
 
 import com.wise.vub.tabletpoint.util.ClientConstants;
 import com.wise.vub.tabletpoint.util.Constants;
-import com.wise.vub.tabletpoint.util.ImageUpdater;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.UUID;
-
-import static java.lang.Math.round;
 
 /**
  * Created by Chaun on 3/12/2016.
  */
-public class ConnectionService {
+public class ConnectionService extends Service {
     private final BluetoothAdapter mAdapter;
     private final Activity mActivity;
     private BluetoothDevice mDevice;
@@ -48,13 +39,32 @@ public class ConnectionService {
     private static final UUID MY_UUID = UUID.fromString("04c6093b-0000-1000-8000-00805f9b34fb");
     private static final String TAG = "Chauncey: ";
 
+    private final class ServiceHandler extends Handler {
+        public ServiceHandler (Looper looper) {
+            super(looper);
+        }
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case Constants.GOTO_SLIDE:
+                    System.out.println(msg.toString());
+                    write(msg.toString());
+            }
+        }
+    }
 
     // Constructor
     public ConnectionService(Activity activity, String deviceMacAddr) {
+        super();
         mAdapter = BluetoothAdapter.getDefaultAdapter();
         mActivity = activity;
         mDevice = mAdapter.getRemoteDevice(deviceMacAddr);
         mConnectThread = null;
+    }
+
+    @Override
+    public void onCreate() {
+
     }
 
 
@@ -94,8 +104,16 @@ public class ConnectionService {
     }
 
     // Write message to the server
-    public synchronized void write() {
+    public synchronized void write(String commands) {
+        if (mConnectedThread != null) {
+            mConnectedThread.write(commands);
+        }
+    }
 
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 
     /**
@@ -149,13 +167,14 @@ public class ConnectionService {
                 socket.connect();
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
-                tmpOut.write((ClientConstants.IMAGE_REQEUST + "\r\n").getBytes());
             } catch (IOException e) {
                 Log.e(TAG, "Sockets creation failed.", e);
             }
 
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
+            write(ClientConstants.IMAGE_REQEUST + "\r\n");
+
         }
 
         public void run() {
@@ -200,11 +219,14 @@ public class ConnectionService {
                             Log.d(TAG, "Data length: " + data.length);
                             final Bitmap image = BitmapFactory.decodeByteArray(data, 0, imageSize);
                             Log.d(TAG, "Bitmap is created");
+                            /* Updating the UI */
                             mActivity.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     Log.d(TAG, "Before update image");
                                     ImageView imageView = ((ImageView) mActivity.findViewById(R.id.image_view_presentation));
+                                    ScribbleView customizedView = (ScribbleView) mActivity.findViewById(R.id.customized_view_scribble);
+                                    customizedView.updateBitmap(image);
                                     imageView.setImageBitmap(image);
                                 }
                             });
@@ -213,7 +235,7 @@ public class ConnectionService {
                             imageSize = 0;
                             progress = 0;
                             dataOutputStream.reset();
-                            mmOutStream.write((ClientConstants.IMAGE_REQEUST + "\r\n").getBytes());
+                            write(ClientConstants.IMAGE_REQEUST + "\r\n");
                             Log.d(TAG, "New request out");
                         }
                     }
@@ -225,6 +247,15 @@ public class ConnectionService {
 
         public void cancel() {
 
+        }
+
+        public void write(String commands) {
+            try {
+                mmOutStream.write(commands.getBytes());
+                mmOutStream.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

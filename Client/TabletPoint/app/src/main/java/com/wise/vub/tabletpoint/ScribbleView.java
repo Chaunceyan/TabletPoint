@@ -1,20 +1,29 @@
 package com.wise.vub.tabletpoint;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PathMeasure;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+
+import com.wise.vub.tabletpoint.util.ClientConstants;
+import com.wise.vub.tabletpoint.util.Constants;
 
 /**
  * TODO: document your custom view class.
  */
-public class ScribleView extends View {
+public class ScribbleView extends View {
     private String mExampleString; // TODO: use a default from R.string...
     private int mExampleColor = Color.RED; // TODO: use a default from R.color...
     private float mExampleDimension = 0; // TODO: use a default from R.dimen...
@@ -24,20 +33,23 @@ public class ScribleView extends View {
     private float mTextWidth;
     private float mTextHeight;
 
-    private static Bitmap image;
+    private Paint mPaint;
+    private boolean mStreamingFlag;
+    private Path mPath = new Path();
+    float mX = 0, mY = 0;
 
-    public ScribleView(Context context) {
+
+    public ScribbleView(Context context) {
         super(context);
         init(null, 0);
     }
 
-
-    public ScribleView(Context context, AttributeSet attrs) {
+    public ScribbleView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init(attrs, 0);
     }
 
-    public ScribleView(Context context, AttributeSet attrs, int defStyle) {
+    public ScribbleView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         init(attrs, defStyle);
     }
@@ -45,22 +57,24 @@ public class ScribleView extends View {
     private void init(AttributeSet attrs, int defStyle) {
         // Load attributes
         final TypedArray a = getContext().obtainStyledAttributes(
-                attrs, R.styleable.ScribleView, defStyle, 0);
+                attrs, R.styleable.ScribbleView, defStyle, 0);
+
+        mStreamingFlag = false;
 
         mExampleString = a.getString(
-                R.styleable.ScribleView_exampleString);
+                R.styleable.ScribbleView_exampleString);
         mExampleColor = a.getColor(
-                R.styleable.ScribleView_exampleColor,
+                R.styleable.ScribbleView_exampleColor,
                 mExampleColor);
         // Use getDimensionPixelSize or getDimensionPixelOffset when dealing with
         // values that should fall on pixel boundaries.
         mExampleDimension = a.getDimension(
-                R.styleable.ScribleView_exampleDimension,
+                R.styleable.ScribbleView_exampleDimension,
                 mExampleDimension);
 
-        if (a.hasValue(R.styleable.ScribleView_exampleDrawable)) {
+        if (a.hasValue(R.styleable.ScribbleView_exampleDrawable)) {
             mExampleDrawable = a.getDrawable(
-                    R.styleable.ScribleView_exampleDrawable);
+                    R.styleable.ScribbleView_exampleDrawable);
             mExampleDrawable.setCallback(this);
         }
 
@@ -70,6 +84,13 @@ public class ScribleView extends View {
         mTextPaint = new TextPaint();
         mTextPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
         mTextPaint.setTextAlign(Paint.Align.LEFT);
+
+        mPaint = new Paint();
+        mPaint.setAntiAlias(true);
+        mPaint.setColor(Color.BLACK);
+        mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setStrokeJoin(Paint.Join.ROUND);
+        mPaint.setStrokeWidth(4f);
 
         // Update TextPaint and text measurements from attributes
         invalidateTextPaintAndMeasurements();
@@ -84,6 +105,11 @@ public class ScribleView extends View {
         mTextHeight = fontMetrics.bottom;
     }
 
+    public void updateBitmap (Bitmap newImage) {
+        mExampleDrawable = new BitmapDrawable(getResources(), newImage);
+        mStreamingFlag = true;
+        this.invalidate();
+    }
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -94,22 +120,61 @@ public class ScribleView extends View {
         int paddingTop = getPaddingTop();
         int paddingRight = getPaddingRight();
         int paddingBottom = getPaddingBottom();
-
         int contentWidth = getWidth() - paddingLeft - paddingRight;
         int contentHeight = getHeight() - paddingTop - paddingBottom;
 
-        // Draw the text.
-        canvas.drawText(mExampleString,
-                paddingLeft + (contentWidth - mTextWidth) / 2,
-                paddingTop + (contentHeight + mTextHeight) / 2,
-                mTextPaint);
-
         // Draw the example drawable on top of the text.
         if (mExampleDrawable != null) {
-            mExampleDrawable.setBounds(paddingLeft, paddingTop,
-                    paddingLeft + contentWidth, paddingTop + contentHeight);
+            mExampleDrawable.setBounds(paddingLeft-15, paddingTop,
+                    paddingLeft + contentWidth+15, paddingTop + contentHeight);
             mExampleDrawable.draw(canvas);
         }
+
+        if (!mStreamingFlag) {
+            // Draw the text.
+            canvas.drawText(mExampleString,
+                    paddingLeft + (contentWidth - mTextWidth) / 2,
+                    paddingTop + (contentHeight + mTextHeight) / 2,
+                    mTextPaint);
+        } else {
+            canvas.drawPath(mPath, mPaint);
+        }
+    }
+
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        int action = event.getAction();
+        float x = event.getX(), y = event.getY();
+        ConnectionService service = ((PresentationFragment) ((Activity) this.getContext()).getFragmentManager().findFragmentById(R.id.fragment_presentation_image)).mConnectionService;
+        switch (action) {
+            case MotionEvent.ACTION_DOWN: touchStart(x, y);
+                Log.d("TouchEventChauncey", "Start" + String.valueOf(x) + String.valueOf(y));
+                service.write(Constants.PENDOWN + "," + Float.valueOf(x) + "," + Float.valueOf(y) + "\r\n");
+                break;
+            case MotionEvent.ACTION_MOVE: touchMove(x, y);
+                Log.d("TouchEventChauncey", "Move" + String.valueOf(x) + String.valueOf(y));
+                service.write(Constants.PENMOVE + "," + Float.valueOf(x) + "," + Float.valueOf(y) + "\r\n");
+                break;
+            case MotionEvent.ACTION_UP: touchEnd(x, y);
+                Log.d("TouchEventChauncey", "End" + String.valueOf(x) + String.valueOf(y));
+                service.write(Constants.PENUP + "," + Float.valueOf(x) + "," + Float.valueOf(y) + "\r\n");
+                break;
+        }
+        this.invalidate();
+        return true;
+    }
+
+    private void touchStart (float x, float y) {
+        mPath.moveTo(x, y);
+    }
+
+    private void touchMove (float x, float y) {
+        mPath.lineTo(x, y);
+    }
+
+    private void touchEnd (float x, float y) {
+        mPath.lineTo(x, y);
     }
 
     /**

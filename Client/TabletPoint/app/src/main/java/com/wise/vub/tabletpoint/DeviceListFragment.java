@@ -93,7 +93,7 @@ public class DeviceListFragment extends Fragment {
 
                 // Start new activity for rendering image;
                 Intent intent = new Intent(getActivity(), PresentationActivity.class);
-                intent.putExtra(Constants.device_address_tag.getName(), deviceMacAddr);
+                intent.putExtra(Constants.DEVICE_MAC_ADDRESS_TAG, deviceMacAddr);
                 startActivity(intent);
             }
         });

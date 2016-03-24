@@ -11,6 +11,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Maven: net.sf.bluecove:bluecove:2.1.0" level="project" />
+    <orderEntry type="library" name="Maven: net.java.dev.jna:jna:4.2.1" level="project" />
+    <orderEntry type="library" name="Maven: net.java.dev.jna:jna-platform:4.2.1" level="project" />
+    <orderEntry type="library" name="Maven: bluecove:javax.bluetooth:1.0" level="project" />
   </component>
 </module>

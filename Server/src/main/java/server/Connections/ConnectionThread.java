@@ -1,22 +1,18 @@
 package server.Connections;
 
-import com.sun.org.apache.xpath.internal.SourceTree;
-import com.sun.xml.internal.bind.v2.runtime.reflect.Lister;
-import com.sun.xml.internal.ws.util.*;
-import image_produce.ImageCompressor;
 import image_produce.ScreenCapture;
-import sun.nio.ch.IOUtil;
-import util.*;
-import util.Constants;
+import util.constants.Commands;
+import util.constants.Constants;
+import util.powerpoint.MSPowerPoint;
+import util.powerpoint.interfaces.PpSlideShowPointerType;
 
 import javax.bluetooth.RemoteDevice;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
-import javax.imageio.stream.ImageOutputStream;
 import javax.microedition.io.StreamConnection;
-import java.awt.*;
+import java.awt.geom.Arc2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -24,20 +20,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Created by Chaun on 3/8/2016.
  */
 public class ConnectionThread implements Runnable {
     private ConnectionService connectionService;
-    StreamConnection  streamConnection;
+    private StreamConnection  streamConnection;
+    private Executor executor;
     private String separator = ",";
+    private final ArrayBlockingQueue<String> queue;
 
     public ConnectionThread (StreamConnection streamConnection) {
         this.streamConnection = streamConnection;
+        queue = new ArrayBlockingQueue<String>(100);
     }
+
 
     public void run() {
         RemoteDevice dev = null;
@@ -45,9 +45,15 @@ public class ConnectionThread implements Runnable {
             dev = RemoteDevice.getRemoteDevice(streamConnection);
             System.out.println("Remote device address: "+dev.getBluetoothAddress());
             System.out.println("Remote device name: "+dev.getFriendlyName(true));
-            System.out.println("Starting sender thread!!");
+
+            System.out.println("Executor started");
+            executor = new Executor();
+            new Thread(executor).start();
+
             connectionService = new ConnectionService();
-            connectionService.run();
+            new Thread(connectionService).start();
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -83,8 +89,6 @@ public class ConnectionThread implements Runnable {
                 param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
                 param.setCompressionQuality(0.5f);
 
-
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -104,7 +108,8 @@ public class ConnectionThread implements Runnable {
                         if (command.equals(Constants.IMAGE_REQEUST)) {
                             sendImage();
                         } else {
-                            System.out.println("Commands to be implemented.");
+                            System.out.println("Putting commands into queue");
+                            queue.add(command);
                         }
                     }
                 }
@@ -174,11 +179,48 @@ public class ConnectionThread implements Runnable {
         } // Stops thread
     } // Connection Sender Class
 
-    private class ConnectionReceiver implements Runnable {
+    private class Executor implements Runnable{
 
+        private float mX, mY;
         public void run() {
-            
-        } // Run method
+            while(true) {
+                try {
+                    if (queue.isEmpty()) {
+                        Thread.sleep(1000);
+                    } else {
+                        String command = queue.take();
+                        execute(command);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
-    } // Connection Receiver Class
+        private void execute (String command) {
+            float endX,endY;
+            String [] params = command.split(",");
+            switch (Integer.valueOf(params[0])) {
+                case Commands.PenDown:
+                    MSPowerPoint.setPointType(PpSlideShowPointerType.ppSlideShowPointerPen);
+                    mX = Float.valueOf(params[1]);
+                    mY = Float.valueOf(params[2]);
+                    break;
+                case Commands.PenMove:
+                    System.out.println("Incoming commands: Drawing Line" );
+                    endX = Float.valueOf(params[1]);
+                    endY = Float.valueOf(params[2]);
+                    MSPowerPoint.drawLine(mX, mY, endX, endY);
+                    mX = endX;
+                    mY = endY;
+                    break;
+                case Commands.PenUp:
+                    endX = Float.valueOf(params[1]);
+                    endY = Float.valueOf(params[2]);
+                    MSPowerPoint.drawLine(mX, mY, endX, endY);
+                    mX = endX;
+                    mY = endY;
+            }
+        }
+    }
 }

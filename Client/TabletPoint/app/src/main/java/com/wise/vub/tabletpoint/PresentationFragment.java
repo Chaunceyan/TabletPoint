@@ -36,7 +36,7 @@ public class PresentationFragment extends Fragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
-    private ConnectionService mConnectionService;
+    public ConnectionService mConnectionService;
 
     // TODO: Rename and change types of parameters
     private String deviceMacAddr;
@@ -64,7 +64,7 @@ public class PresentationFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        deviceMacAddr = getActivity().getIntent().getStringExtra(Constants.device_address_tag.getName());
+        deviceMacAddr = getActivity().getIntent().getStringExtra(Constants.DEVICE_MAC_ADDRESS_TAG);
     }
 
     @Override
@@ -103,8 +103,8 @@ public class PresentationFragment extends Fragment {
             startActivityForResult(enableBtIntent, 1);
         }
         // Start the background service of bluetooth communication
-      mConnectionService = new ConnectionService( getActivity(),deviceMacAddr);
-      mConnectionService.connect();
+        mConnectionService = new ConnectionService( getActivity(),deviceMacAddr);
+        mConnectionService.connect();
     }
 
     @Override
