@@ -11,6 +11,7 @@
         android:layout_margin="10dp"
         android:layout_gravity="center"
         android:background="#ccc"
+        android:adjustViewBounds="true"
         app:exampleColor="#33b5e5"
         app:exampleDimension="24sp"
         app:exampleDrawable="@android:drawable/alert_light_frame"

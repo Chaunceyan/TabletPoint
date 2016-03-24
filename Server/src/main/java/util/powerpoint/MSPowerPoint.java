@@ -13,6 +13,7 @@ import java.util.*;
 public final class MSPowerPoint {
     private static ComIApplication app;
     private static ComIPresentation pres;
+    private static ComISlideShowWindow window;
     private static ComISlideShowView view;
     static {
         Factory factory = new Factory();
@@ -29,7 +30,9 @@ public final class MSPowerPoint {
     }
     public static boolean present() {
         if(pres != null) {
-            view = pres.getSlideShowSettings().run().getView();
+            window = pres.getSlideShowSettings().run();
+            window.Activate();
+            view = window.getView();
             return true;
         } else {
             return false;

@@ -1,5 +1,6 @@
 package util.powerpoint.interfaces;
 
+import com.sun.jna.platform.win32.COM.util.annotation.ComMethod;
 import com.sun.jna.platform.win32.COM.util.annotation.ComProperty;
 
 /**
@@ -8,4 +9,14 @@ import com.sun.jna.platform.win32.COM.util.annotation.ComProperty;
 public interface ComISlideShowWindow {
     @ComProperty
     ComISlideShowView getView();
+    @ComProperty
+    float getHeight();
+    @ComProperty
+    float getLeft();
+    @ComProperty
+    float getWidth();
+    @ComProperty
+    float getTop();
+    @ComMethod
+    void Activate();
 }

@@ -224,10 +224,8 @@ public class ConnectionService extends Service {
                                 @Override
                                 public void run() {
                                     Log.d(TAG, "Before update image");
-                                    ImageView imageView = ((ImageView) mActivity.findViewById(R.id.image_view_presentation));
                                     ScribbleView customizedView = (ScribbleView) mActivity.findViewById(R.id.customized_view_scribble);
                                     customizedView.updateBitmap(image);
-                                    imageView.setImageBitmap(image);
                                 }
                             });
                             waitingForHeader = true;

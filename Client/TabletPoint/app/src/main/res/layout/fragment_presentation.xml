@@ -5,15 +5,6 @@
     android:layout_height="match_parent"
     tools:context="com.wise.vub.tabletpoint.PresentationFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <ImageView
-        android:id="@+id/image_view_presentation"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="0.5"
-        android:scaleType="fitCenter"
-        android:text="@string/hello_blank_fragment" />
-
     <include layout="@layout/sample_scrible_view"/>
 
 </LinearLayout>

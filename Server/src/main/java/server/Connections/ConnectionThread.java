@@ -200,23 +200,24 @@ public class ConnectionThread implements Runnable {
         private void execute (String command) {
             float endX,endY;
             String [] params = command.split(",");
+            float width = 960, height = 540;
             switch (Integer.valueOf(params[0])) {
                 case Commands.PenDown:
                     MSPowerPoint.setPointType(PpSlideShowPointerType.ppSlideShowPointerPen);
-                    mX = Float.valueOf(params[1]);
-                    mY = Float.valueOf(params[2]);
+                    mX = Float.valueOf(params[1]) * width;
+                    mY = Float.valueOf(params[2]) * height;
                     break;
                 case Commands.PenMove:
-                    System.out.println("Incoming commands: Drawing Line" );
-                    endX = Float.valueOf(params[1]);
-                    endY = Float.valueOf(params[2]);
+                    endX = Float.valueOf(params[1]) * width;
+                    endY = Float.valueOf(params[2]) * height;
                     MSPowerPoint.drawLine(mX, mY, endX, endY);
                     mX = endX;
                     mY = endY;
+                    System.out.println("Incoming commands: Drawing Line" + mX + "," + mY);
                     break;
                 case Commands.PenUp:
-                    endX = Float.valueOf(params[1]);
-                    endY = Float.valueOf(params[2]);
+                    endX = Float.valueOf(params[1]) * width;
+                    endY = Float.valueOf(params[2]) * height;
                     MSPowerPoint.drawLine(mX, mY, endX, endY);
                     mX = endX;
                     mY = endY;

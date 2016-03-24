@@ -16,6 +16,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 
 import com.wise.vub.tabletpoint.util.ClientConstants;
 import com.wise.vub.tabletpoint.util.Constants;
@@ -36,8 +37,7 @@ public class ScribbleView extends View {
     private Paint mPaint;
     private boolean mStreamingFlag;
     private Path mPath = new Path();
-    float mX = 0, mY = 0;
-
+    private float mImageWidth, mImageHeight;
 
     public ScribbleView(Context context) {
         super(context);
@@ -125,19 +125,22 @@ public class ScribbleView extends View {
 
         // Draw the example drawable on top of the text.
         if (mExampleDrawable != null) {
-            mExampleDrawable.setBounds(paddingLeft-15, paddingTop,
-                    paddingLeft + contentWidth+15, paddingTop + contentHeight);
-            mExampleDrawable.draw(canvas);
-        }
-
-        if (!mStreamingFlag) {
-            // Draw the text.
-            canvas.drawText(mExampleString,
-                    paddingLeft + (contentWidth - mTextWidth) / 2,
-                    paddingTop + (contentHeight + mTextHeight) / 2,
-                    mTextPaint);
-        } else {
-            canvas.drawPath(mPath, mPaint);
+            if (!mStreamingFlag) {
+                // Draw the text.
+                mExampleDrawable.setBounds(paddingLeft-15, paddingTop,
+                        paddingLeft + contentWidth+15, paddingTop + contentHeight);
+                mExampleDrawable.draw(canvas);
+                canvas.drawText(mExampleString,
+                        paddingLeft + (contentWidth - mTextWidth) / 2,
+                        paddingTop + (contentHeight + mTextHeight) / 2,
+                        mTextPaint);
+            } else {
+                mImageHeight = this.getHeight();
+                mImageWidth = mExampleDrawable.getIntrinsicWidth() * this.getHeight()/ mExampleDrawable.getIntrinsicHeight();
+                mExampleDrawable.setBounds(Math.round(this.getWidth() / 2 - mImageWidth / 2), paddingTop, Math.round(this.getWidth() / 2 + mImageWidth / 2), Math.round(paddingTop + mImageHeight));
+                mExampleDrawable.draw(canvas);
+                canvas.drawPath(mPath, mPaint);
+            }
         }
     }
 
@@ -145,36 +148,45 @@ public class ScribbleView extends View {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int action = event.getAction();
+        float leftPadding = (this.getWidth() - mImageWidth) / 2;
         float x = event.getX(), y = event.getY();
-        ConnectionService service = ((PresentationFragment) ((Activity) this.getContext()).getFragmentManager().findFragmentById(R.id.fragment_presentation_image)).mConnectionService;
-        switch (action) {
-            case MotionEvent.ACTION_DOWN: touchStart(x, y);
-                Log.d("TouchEventChauncey", "Start" + String.valueOf(x) + String.valueOf(y));
-                service.write(Constants.PENDOWN + "," + Float.valueOf(x) + "," + Float.valueOf(y) + "\r\n");
-                break;
-            case MotionEvent.ACTION_MOVE: touchMove(x, y);
-                Log.d("TouchEventChauncey", "Move" + String.valueOf(x) + String.valueOf(y));
-                service.write(Constants.PENMOVE + "," + Float.valueOf(x) + "," + Float.valueOf(y) + "\r\n");
-                break;
-            case MotionEvent.ACTION_UP: touchEnd(x, y);
-                Log.d("TouchEventChauncey", "End" + String.valueOf(x) + String.valueOf(y));
-                service.write(Constants.PENUP + "," + Float.valueOf(x) + "," + Float.valueOf(y) + "\r\n");
-                break;
+        Log.d("TouchEventChauncey", "Touch Point: " + x + "," + y);
+        if (x >= leftPadding && y >= 0 && x <= leftPadding + mImageWidth && y <= mImageHeight) {
+            ConnectionService service = ((PresentationFragment) ((Activity) this.getContext()).getFragmentManager().findFragmentById(R.id.fragment_presentation_image)).mConnectionService;
+           Log.d("TouchEventChauncey", "View Size: " + mImageWidth + "," + mImageHeight);
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                    touchStart(x, y);
+                    Log.d("TouchEventChauncey", "Start" + String.valueOf(x) + String.valueOf(y));
+                    service.write(Constants.PENDOWN + "," + (Float.valueOf(x) - leftPadding)/mImageWidth + "," + Float.valueOf(y)/(mImageHeight * 0.9) + "\r\n");
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    touchMove(x, y);
+                    Log.d("TouchEventChauncey", "Move" + String.valueOf(x) + String.valueOf(y));
+                    service.write(Constants.PENMOVE + "," + (Float.valueOf(x) - leftPadding) / mImageWidth + "," + Float.valueOf(y) / (mImageHeight * 0.9) + "\r\n");
+                    Log.d("TouchEventChauncey", "onTouchEvent: " + (Float.valueOf(x) - leftPadding) / mImageWidth + "," + Float.valueOf(y) / (mImageHeight * 0.9));
+                    break;
+                case MotionEvent.ACTION_UP:
+                    touchEnd(x, y);
+                    Log.d("TouchEventChauncey", "End" + String.valueOf(x) + String.valueOf(y));
+                    service.write(Constants.PENUP + "," + (Float.valueOf(x) - leftPadding)/mImageWidth + "," + Float.valueOf(y)/(mImageHeight * 0.9) + "\r\n");
+                    break;
+            }
+            this.invalidate();
         }
-        this.invalidate();
         return true;
     }
 
     private void touchStart (float x, float y) {
-        mPath.moveTo(x, y);
+        mPath.moveTo(x, y + (float) (mImageHeight * 0.05));
     }
 
     private void touchMove (float x, float y) {
-        mPath.lineTo(x, y);
+        mPath.lineTo(x, y + (float) (mImageHeight * 0.05));
     }
 
     private void touchEnd (float x, float y) {
-        mPath.lineTo(x, y);
+        mPath.lineTo(x, y + (float) (mImageHeight * 0.05));
     }
 
     /**
