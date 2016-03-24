@@ -1,13 +1,7 @@
 import server.SPPServer;
 import util.powerpoint.MSPowerPoint;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 
 import javax.bluetooth.*;
 import javax.microedition.io.*;
@@ -37,8 +31,10 @@ public class TabletPointServer {
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             String fileName = chooser.getSelectedFile().getAbsolutePath();
             System.out.println("Opening file: " + fileName);
+            File temp = new File("TestingPPT");
             MSPowerPoint.openFile(fileName);
             MSPowerPoint.present();
+            MSPowerPoint.savePresentationAsJPG(temp.getAbsolutePath());
         }
         SPPServer server = new SPPServer();
         server.run();

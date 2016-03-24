@@ -158,18 +158,18 @@ public class ScribbleView extends View {
                 case MotionEvent.ACTION_DOWN:
                     touchStart(x, y);
                     Log.d("TouchEventChauncey", "Start" + String.valueOf(x) + String.valueOf(y));
-                    service.write(Constants.PENDOWN + "," + (Float.valueOf(x) - leftPadding)/mImageWidth + "," + Float.valueOf(y)/(mImageHeight * 0.9) + "\r\n");
+                    service.write(Constants.PENDOWN + "," + (Float.valueOf(x) - leftPadding)/mImageWidth + "," + Float.valueOf(y)/mImageHeight + "\r\n");
                     break;
                 case MotionEvent.ACTION_MOVE:
                     touchMove(x, y);
                     Log.d("TouchEventChauncey", "Move" + String.valueOf(x) + String.valueOf(y));
-                    service.write(Constants.PENMOVE + "," + (Float.valueOf(x) - leftPadding) / mImageWidth + "," + Float.valueOf(y) / (mImageHeight * 0.9) + "\r\n");
-                    Log.d("TouchEventChauncey", "onTouchEvent: " + (Float.valueOf(x) - leftPadding) / mImageWidth + "," + Float.valueOf(y) / (mImageHeight * 0.9));
+                    service.write(Constants.PENMOVE + "," + (Float.valueOf(x) - leftPadding) / mImageWidth + "," + Float.valueOf(y) / mImageHeight + "\r\n");
+                    Log.d("TouchEventChauncey", "onTouchEvent: " + (Float.valueOf(x) - leftPadding) / mImageWidth + "," + Float.valueOf(y) / mImageHeight );
                     break;
                 case MotionEvent.ACTION_UP:
                     touchEnd(x, y);
                     Log.d("TouchEventChauncey", "End" + String.valueOf(x) + String.valueOf(y));
-                    service.write(Constants.PENUP + "," + (Float.valueOf(x) - leftPadding)/mImageWidth + "," + Float.valueOf(y)/(mImageHeight * 0.9) + "\r\n");
+                    service.write(Constants.PENUP + "," + (Float.valueOf(x) - leftPadding)/mImageWidth + "," + Float.valueOf(y)/mImageHeight + "\r\n");
                     break;
             }
             this.invalidate();
@@ -178,15 +178,15 @@ public class ScribbleView extends View {
     }
 
     private void touchStart (float x, float y) {
-        mPath.moveTo(x, y + (float) (mImageHeight * 0.05));
+        mPath.moveTo(x, y);
     }
 
     private void touchMove (float x, float y) {
-        mPath.lineTo(x, y + (float) (mImageHeight * 0.05));
+        mPath.lineTo(x, y);
     }
 
     private void touchEnd (float x, float y) {
-        mPath.lineTo(x, y + (float) (mImageHeight * 0.05));
+        mPath.lineTo(x, y);
     }
 
     /**

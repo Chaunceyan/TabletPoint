@@ -24,6 +24,15 @@ public interface ComIApplication extends IUnknown, IConnectionPoint {
 	@ComProperty
 	ComIPresentation getPresentation();
 
+	@ComProperty
+	ComISlideShowWindows getSlideShowWindows();
+
+	@ComProperty
+	float getHeight();
+
+	@ComProperty
+	float getWidth();
+
 	@ComMethod
 	void Activate();
 	@ComMethod

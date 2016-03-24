@@ -10,7 +10,12 @@ public interface ComIPresentation {
 
     @ComProperty
     ComISlideShowSettings getSlideShowSettings();
-
+    @ComProperty
+    ComIPageSetup getPageSetup();
     @ComMethod
     void Close();
+    @ComMethod
+    void SaveAs(String fileName,
+                PpSaveAsFileType fileType,
+                MsoTriState embedTrueTypeFonts);
 }

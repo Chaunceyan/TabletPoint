@@ -11,6 +11,7 @@ import java.util.*;
  * Created by Chaun on 2/26/2016.
  */
 public final class MSPowerPoint {
+    private static boolean mainScreenFlag = true;
     private static ComIApplication app;
     private static ComIPresentation pres;
     private static ComISlideShowWindow window;
@@ -101,5 +102,20 @@ public final class MSPowerPoint {
         } else {
             return false;
         }
+    }
+    public static void savePresentationAsJPG(String fileName) {
+        pres.SaveAs(fileName, PpSaveAsFileType.ppSaveAsJPG, MsoTriState.msoFalse);
+    }
+    public static float getSlideShowWindowHeigth() {
+        return window.getHeight();
+    }
+    public static float getSlideShowWindowWidth() {
+        return window.getWidth();
+    }
+    public static float getSlideShowViewHeigth() {
+        return pres.getPageSetup().getSlideHeight();
+    }
+    public static float getSlideShowViewWidth() {
+        return pres.getPageSetup().getSlideWidth();
     }
 }

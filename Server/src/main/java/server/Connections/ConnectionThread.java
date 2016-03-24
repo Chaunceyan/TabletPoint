@@ -70,7 +70,7 @@ public class ConnectionThread implements Runnable {
         private BufferedImage curScreenCapture, prevScreenCapture;
         private boolean sendFlag = true;
         private boolean initFlag = false;
-        private int width = 480;
+        private int width = Math.round(MSPowerPoint.getSlideShowViewWidth());
         private String frameInfo;
         private List<String> frameInfos;
         private int interlacedPass = 2;
@@ -121,10 +121,9 @@ public class ConnectionThread implements Runnable {
         public void sendImage() {
             try {
                 if (sendFlag) {
-                    System.out.println("Sending");
                     // Screen Capture here
                     curScreenCapture = ScreenCapture.getScreenCapture();
-
+                    System.out.println("Sending: " + curScreenCapture.getWidth() + ", " + curScreenCapture.getHeight());
                     // Try to resize
                     if (width < curScreenCapture.getWidth()) {
                         curScreenCapture = ScreenCapture.resizeImage(curScreenCapture,
@@ -132,7 +131,7 @@ public class ConnectionThread implements Runnable {
                                 curScreenCapture.getHeight() * width / curScreenCapture.getWidth(),
                                 imageType);
                     }
-                    sendFrame(curScreenCapture);
+
                     prevScreenCapture = curScreenCapture;
                     frameInfo = null;
                     curScreenCapture.flush();

@@ -11,6 +11,10 @@ public interface ComISlideShowView {
     ColorFormat getPointerColor();
     @ComProperty
     void setPointerType(PpSlideShowPointerType pointerType);
+    @ComProperty
+    float getMediaControlsHeight();
+    @ComProperty
+    float getMediaControlsWidth();
     @ComMethod
     void Next();
     @ComMethod
