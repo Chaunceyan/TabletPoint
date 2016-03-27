@@ -31,7 +31,7 @@ public class TabletPointServer {
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             String fileName = chooser.getSelectedFile().getAbsolutePath();
             System.out.println("Opening file: " + fileName);
-            File temp = new File("TestingPPT");
+            File temp = new File("SlideImages");
             MSPowerPoint.openFile(fileName);
             MSPowerPoint.present();
             MSPowerPoint.savePresentationAsJPG(temp.getAbsolutePath());

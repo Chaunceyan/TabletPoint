@@ -12,15 +12,12 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.microedition.io.StreamConnection;
-import java.awt.geom.Arc2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
@@ -30,7 +27,6 @@ public class ConnectionThread implements Runnable {
     private ConnectionService connectionService;
     private StreamConnection  streamConnection;
     private Executor executor;
-    private String separator = ",";
     private final ArrayBlockingQueue<String> queue;
 
     public ConnectionThread (StreamConnection streamConnection) {
@@ -40,7 +36,7 @@ public class ConnectionThread implements Runnable {
 
 
     public void run() {
-        RemoteDevice dev = null;
+        RemoteDevice dev;
         try {
             dev = RemoteDevice.getRemoteDevice(streamConnection);
             System.out.println("Remote device address: "+dev.getBluetoothAddress());
@@ -52,7 +48,6 @@ public class ConnectionThread implements Runnable {
 
             connectionService = new ConnectionService();
             new Thread(connectionService).start();
-
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -67,18 +62,13 @@ public class ConnectionThread implements Runnable {
         private OutputStream imageOut;
         private OutputStream out;
         private BufferedReader reader;
-        private BufferedImage curScreenCapture, prevScreenCapture;
+        private BufferedImage curScreenCapture;
         private boolean sendFlag = true;
-        private boolean initFlag = false;
         private int width = Math.round(MSPowerPoint.getSlideShowViewWidth());
-        private String frameInfo;
-        private List<String> frameInfos;
-        private int interlacedPass = 2;
-
         private final int imageType = BufferedImage.TYPE_USHORT_555_RGB;
+        private int fileIndex;
 
         private ConnectionService () {
-            frameInfos = new ArrayList<String>();
             try {
                 out = streamConnection.openOutputStream();
                 writer = ImageIO.getImageWritersByFormatName("jpg").next();
@@ -88,6 +78,7 @@ public class ConnectionThread implements Runnable {
                 param = writer.getDefaultWriteParam();
                 param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
                 param.setCompressionQuality(0.5f);
+                fileIndex = 0;
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -96,7 +87,7 @@ public class ConnectionThread implements Runnable {
 
         public void run() {
             try {
-                String command = null;
+                String command;
                 while (true) {
                     tempImage = new File(fileName);
                     tempImage.delete();
@@ -107,6 +98,10 @@ public class ConnectionThread implements Runnable {
                         System.out.println("Incoming command: " + command);
                         if (command.equals(Constants.IMAGE_REQEUST)) {
                             sendImage();
+                        } else if (command.equals(Constants.SLIDE_PREVIEW_REQUEST)) {
+                            File[] files = new File("SlideImages").listFiles();
+                            out.write(ByteBuffer.allocate(4).putInt(files.length).array());
+                            sendSlidesPreview(fileIndex++, files);
                         } else {
                             System.out.println("Putting commands into queue");
                             queue.add(command);
@@ -115,6 +110,16 @@ public class ConnectionThread implements Runnable {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+        }
+
+        private boolean sendSlidesPreview(int index, File[] files) {
+            if(index < files.length) {
+                sendFile(files[index]);
+                index ++;
+                return true;
+            } else {
+                return false;
             }
         }
 
@@ -131,13 +136,11 @@ public class ConnectionThread implements Runnable {
                                 curScreenCapture.getHeight() * width / curScreenCapture.getWidth(),
                                 imageType);
                     }
-
-                    prevScreenCapture = curScreenCapture;
-                    frameInfo = null;
+                    sendFrame(curScreenCapture);
                     curScreenCapture.flush();
                     curScreenCapture = null;
                 }
-            }catch(Exception e){
+            } catch(Exception e) {
                 e.printStackTrace();
             }
         } // Run function.
@@ -160,11 +163,22 @@ public class ConnectionThread implements Runnable {
                 imageOut.flush();
                 imageOut.close();
                 writer.reset();
-
             } catch (IOException e) {
                 e.printStackTrace();
                 System.out.println("Output error, stopping thread!");
                 stopThread();
+            }
+        }
+
+        private void sendFile (File file) {
+            try {
+                byte[] data = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
+                System.out.println(data.length);
+                out.write(ByteBuffer.allocate(4).putInt(data.length).array());
+                out.write(data);
+                out.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
 

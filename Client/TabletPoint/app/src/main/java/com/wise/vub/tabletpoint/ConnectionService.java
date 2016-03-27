@@ -13,6 +13,8 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.widget.ImageView;
 
@@ -24,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -156,11 +159,13 @@ public class ConnectionService extends Service {
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
         private Bitmap image;
+        private int fileIndex;
         private ConnectedThread(BluetoothSocket socket) {
             Log.d(TAG, "Creating ConnectedThread");
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
+            fileIndex = 0;
 
             // Get the BluetoothSocket input and output stream.
             try {
@@ -173,8 +178,53 @@ public class ConnectionService extends Service {
 
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
+            preLoadSlidesAndNotes();
             write(ClientConstants.IMAGE_REQEUST + "\r\n");
+        }
 
+        public void preLoadSlidesAndNotes() {
+            try {
+                final ArrayList<Bitmap> bitmaps = new ArrayList<Bitmap>();
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                write(ClientConstants.SLIDE_PREVIEW_REQUEST + "\r\n");
+                byte[] sizeBuffer = new byte[4];
+                int fileNumeber;
+                do {
+                    mmInStream.read(sizeBuffer);
+                    fileNumeber = ByteBuffer.wrap(sizeBuffer).getInt();
+                    Log.d(TAG, "File Number: " + fileNumeber);
+                    mmInStream.read(sizeBuffer);
+                    int dataSize = ByteBuffer.wrap(sizeBuffer).getInt();
+                    int progress = 0;
+                    while (!(progress >= dataSize)) {
+                        byte[] dataBuffer = new byte[ClientConstants.CHUNK_SIZE];
+                        int readSize = mmInStream.read(dataBuffer);
+                        byteArrayOutputStream.write(dataBuffer, 0, readSize);
+                        progress += readSize;
+                        Log.d(TAG, "Progress: " + progress + " Data size: " + dataSize);
+                    }
+                    byte[] totalData = byteArrayOutputStream.toByteArray();
+                    byteArrayOutputStream.reset();
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(totalData, 0, dataSize-1);
+                    bitmaps.add(bitmap);
+                    write(ClientConstants.SLIDE_PREVIEW_REQUEST + "\r\n");
+                }  while (++fileIndex < fileNumeber);
+                mActivity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.d(TAG, "Before update image");
+                        RecyclerView recyclerView = (RecyclerView) mActivity.findViewById(R.id.slide_preview_list);
+                        recyclerView.setHasFixedSize(true);
+                        recyclerView.setLayoutManager(new LinearLayoutManager(mActivity));
+                        Bitmap[] bitmapArray = bitmaps.toArray(new Bitmap[bitmaps.size()]);
+                        SlidesPreviewAdapter mAdapter = new SlidesPreviewAdapter(bitmapArray);
+                        recyclerView.setAdapter(mAdapter);
+                    }
+                });
+                Log.d(TAG, "Bitmap Loaded.");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         public void run() {
@@ -201,7 +251,7 @@ public class ConnectionService extends Service {
                                 Log.d(TAG, "Image size: " + String.valueOf(imageSize));
                                 waitingForHeader = false;
                             } else {
-                                Log.d(TAG, "Header Incorrect");
+                                Log.d(TAG, "Header Incorrect: " + headers[0] + headers[1]);
                                 mmSocket.close();
                                 break;
                             } // Header

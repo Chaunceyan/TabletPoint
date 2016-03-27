@@ -13,15 +13,17 @@
     tools:context="com.wise.vub.tabletpoint.PresentationActivity"
     tools:showIn="@layout/activity_presentation">
 
-    <LinearLayout
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/slide_preview_list"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_weight="0.8">
-    </LinearLayout>
+        android:scrollbars="horizontal"
+        android:layout_height="0dp"
+        android:layout_weight="0.2"
+        />
     <fragment
         android:name="com.wise.vub.tabletpoint.PresentationFragment"
         android:id="@+id/fragment_presentation_image"
-        android:layout_weight="0.2"
-        android:layout_height="match_parent"
+        android:layout_weight="0.8"
+        android:layout_height="0dp"
         android:layout_width="match_parent"/>
 </LinearLayout>
