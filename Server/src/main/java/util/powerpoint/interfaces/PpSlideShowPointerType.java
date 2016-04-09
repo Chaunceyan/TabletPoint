@@ -14,6 +14,6 @@ public enum PpSlideShowPointerType implements IComEnum {
     ppSlideShowPointerPen(2);
 
     private long value;
-    private PpSlideShowPointerType(long value) {this.value = value;}
+    PpSlideShowPointerType(long value) {this.value = value;}
     public long getValue(){return this.value;}
 }

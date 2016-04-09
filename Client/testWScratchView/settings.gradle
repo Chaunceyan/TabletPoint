@@ -1,0 +1,2 @@
+include ':wScratchViewLibrary'
+include ':testWScratchView'

@@ -1,5 +1,6 @@
 import server.SPPServer;
 import util.powerpoint.MSPowerPoint;
+import util.powerpoint.interfaces.PpSlideShowPointerType;
 
 import java.io.*;
 
@@ -35,6 +36,7 @@ public class TabletPointServer {
             MSPowerPoint.openFile(fileName);
             MSPowerPoint.present();
             MSPowerPoint.savePresentationAsJPG(temp.getAbsolutePath());
+//            MSPowerPoint.saveInkFile("InkXML.xml");
         }
         SPPServer server = new SPPServer();
         server.run();

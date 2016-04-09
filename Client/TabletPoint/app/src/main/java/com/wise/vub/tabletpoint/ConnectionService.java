@@ -5,9 +5,11 @@ import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -16,14 +18,25 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.widget.ImageView;
+import android.view.Display;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ListView;
 
+import com.wise.vub.tabletpoint.AnnotationListView.AnnotationListAdapter;
+import com.wise.vub.tabletpoint.RecyclerView.DividerItemDecoration;
+import com.wise.vub.tabletpoint.RecyclerView.SlidesPreviewAdapter;
 import com.wise.vub.tabletpoint.util.ClientConstants;
 import com.wise.vub.tabletpoint.util.Constants;
+import com.wise.vub.tabletpoint.util.XMLHandler;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -39,6 +52,9 @@ public class ConnectionService extends Service {
     private BluetoothDevice mDevice;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
+    public float ratio;
+    public boolean mConnectedFlag;
+    public AnnotationListAdapter annotationListAdapter;
     private static final UUID MY_UUID = UUID.fromString("04c6093b-0000-1000-8000-00805f9b34fb");
     private static final String TAG = "Chauncey: ";
 
@@ -63,6 +79,7 @@ public class ConnectionService extends Service {
         mActivity = activity;
         mDevice = mAdapter.getRemoteDevice(deviceMacAddr);
         mConnectThread = null;
+        mConnectedFlag = false;
     }
 
     @Override
@@ -89,6 +106,7 @@ public class ConnectionService extends Service {
 
         mConnectedThread = new ConnectedThread(socket);
         mConnectedThread.start();
+        mConnectedFlag = true;
     }
 
     // Stop all threads
@@ -178,8 +196,48 @@ public class ConnectionService extends Service {
 
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
+
+            // Load the previews of the slides and the annotations
             preLoadSlidesAndNotes();
+            preLoadInk();
             write(ClientConstants.IMAGE_REQEUST + "\r\n");
+        }
+
+        public void preLoadInk() {
+            try {
+                write(ClientConstants.INKXML_REQUEST + "\r\n");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(mmInStream));
+                final String xmlStr = reader.readLine();
+                Log.d("XML Parsing", xmlStr);
+                ratio = Float.valueOf(xmlStr.split(",")[0]);
+                final float[] height = new float[1];
+                mActivity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        ListView annotationList = (ListView) mActivity.findViewById(R.id.list_view_annotation);
+                        ScribbleView sView = (ScribbleView) mActivity.findViewById(R.id.customized_view_scribble);
+                        height[0] = sView.getMeasuredHeight();
+                        Log.e("Why", String.valueOf(height[0]));
+                        annotationListAdapter = new AnnotationListAdapter(mActivity, 0, ratio, height[0]);
+                        annotationList.setAdapter(annotationListAdapter);
+                        annotationList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                            @Override
+                            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                MyPath path = (MyPath) parent.getItemAtPosition(position);
+                                Log.d("XML Parser", path.getPoints().toString());
+                                ScribbleView sView = (ScribbleView) mActivity.findViewById(R.id.customized_view_scribble);
+                                sView.addPath(path);
+                            }
+                        });
+                        int start = xmlStr.indexOf(",");
+                        float leftPadding = (sView.getWidth() - height[0]/ratio) / 2;
+                        if (XMLHandler.pathsFrom(xmlStr.substring(start + 1), ratio, height[0], leftPadding) != null)
+                        annotationListAdapter.addAll(XMLHandler.pathsFrom(xmlStr.substring(start + 1), ratio, height[0], leftPadding));
+                    }
+                });
+            } catch (IOException e) {
+                Log.e("Chauncey Error:", e.getMessage());
+            }
         }
 
         public void preLoadSlidesAndNotes() {
@@ -205,9 +263,9 @@ public class ConnectionService extends Service {
                     }
                     byte[] totalData = byteArrayOutputStream.toByteArray();
                     byteArrayOutputStream.reset();
-                    Bitmap bitmap = BitmapFactory.decodeByteArray(totalData, 0, dataSize-1);
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(totalData, 0, dataSize);
                     bitmaps.add(bitmap);
-                    write(ClientConstants.SLIDE_PREVIEW_REQUEST + "\r\n");
+                    if (fileIndex != fileNumeber - 1) write(ClientConstants.SLIDE_PREVIEW_REQUEST + "\r\n");
                 }  while (++fileIndex < fileNumeber);
                 mActivity.runOnUiThread(new Runnable() {
                     @Override
@@ -215,10 +273,13 @@ public class ConnectionService extends Service {
                         Log.d(TAG, "Before update image");
                         RecyclerView recyclerView = (RecyclerView) mActivity.findViewById(R.id.slide_preview_list);
                         recyclerView.setHasFixedSize(true);
-                        recyclerView.setLayoutManager(new LinearLayoutManager(mActivity));
+                        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(mActivity);
+                        linearLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
+                        recyclerView.setLayoutManager(linearLayoutManager);
                         Bitmap[] bitmapArray = bitmaps.toArray(new Bitmap[bitmaps.size()]);
-                        SlidesPreviewAdapter mAdapter = new SlidesPreviewAdapter(bitmapArray);
+                        SlidesPreviewAdapter mAdapter = new SlidesPreviewAdapter(mActivity, bitmapArray);
                         recyclerView.setAdapter(mAdapter);
+                        recyclerView.addItemDecoration(new DividerItemDecoration(mActivity, DividerItemDecoration.HORIZONTAL_LIST));
                     }
                 });
                 Log.d(TAG, "Bitmap Loaded.");

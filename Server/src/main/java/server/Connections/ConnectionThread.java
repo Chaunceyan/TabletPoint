@@ -1,6 +1,7 @@
 package server.Connections;
 
 import image_produce.ScreenCapture;
+import util.XMLWriter;
 import util.constants.Commands;
 import util.constants.Constants;
 import util.powerpoint.MSPowerPoint;
@@ -19,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created by Chaun on 3/8/2016.
@@ -27,11 +29,11 @@ public class ConnectionThread implements Runnable {
     private ConnectionService connectionService;
     private StreamConnection  streamConnection;
     private Executor executor;
-    private final ArrayBlockingQueue<String> queue;
+    private final ConcurrentLinkedQueue<String> queue;
 
     public ConnectionThread (StreamConnection streamConnection) {
         this.streamConnection = streamConnection;
-        queue = new ArrayBlockingQueue<String>(100);
+        queue = new ConcurrentLinkedQueue<String>();
     }
 
 
@@ -57,6 +59,7 @@ public class ConnectionThread implements Runnable {
     private class ConnectionService implements Runnable {
         private String fileName = "TempFile";
         private File tempImage;
+        private File annotation;
         private ImageWriteParam param;
         private ImageWriter writer;
         private OutputStream imageOut;
@@ -79,6 +82,7 @@ public class ConnectionThread implements Runnable {
                 param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
                 param.setCompressionQuality(0.5f);
                 fileIndex = 0;
+                ScreenCapture.init();
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -102,6 +106,11 @@ public class ConnectionThread implements Runnable {
                             File[] files = new File("SlideImages").listFiles();
                             out.write(ByteBuffer.allocate(4).putInt(files.length).array());
                             sendSlidesPreview(fileIndex++, files);
+                        } else if (command.equals(Constants.INKXML_REQUEST)) {
+                            System.out.println(MSPowerPoint.readInkFile());
+                            out.write((String.valueOf(ScreenCapture.getSlideViewRatio())
+                                    + "," +  MSPowerPoint.readInkFile()+"\r\n")
+                                    .getBytes());
                         } else {
                             System.out.println("Putting commands into queue");
                             queue.add(command);
@@ -194,6 +203,9 @@ public class ConnectionThread implements Runnable {
 
     private class Executor implements Runnable{
 
+        public Executor() {
+        }
+
         private float mX, mY;
         public void run() {
             while(true) {
@@ -201,7 +213,7 @@ public class ConnectionThread implements Runnable {
                     if (queue.isEmpty()) {
                         Thread.sleep(1000);
                     } else {
-                        String command = queue.take();
+                        String command = queue.poll();
                         execute(command);
                     }
                 } catch (InterruptedException e) {
@@ -211,29 +223,43 @@ public class ConnectionThread implements Runnable {
         }
 
         private void execute (String command) {
-            float endX,endY;
+            int leftPadding = ScreenCapture.leftPadding;
+            int topPadding = ScreenCapture.topPadding;
             String [] params = command.split(",");
-            float width = 960, height = 540;
+            float width = ScreenCapture.getScreenCaptureBound().width, height = ScreenCapture.getScreenCaptureBound().height;
             switch (Integer.valueOf(params[0])) {
                 case Commands.PenDown:
-                    MSPowerPoint.setPointType(PpSlideShowPointerType.ppSlideShowPointerPen);
-                    mX = Float.valueOf(params[1]) * width;
-                    mY = Float.valueOf(params[2]) * height;
+                    mX = Float.valueOf(params[1]) * width + leftPadding;
+                    mY = Float.valueOf(params[2]) * height + topPadding;
+                    MSPowerPoint.penDown(mX, mY, PpSlideShowPointerType.valueOf(params[3]));
                     break;
                 case Commands.PenMove:
-                    endX = Float.valueOf(params[1]) * width;
-                    endY = Float.valueOf(params[2]) * height;
-                    MSPowerPoint.drawLine(mX, mY, endX, endY);
-                    mX = endX;
-                    mY = endY;
+                    mX = Float.valueOf(params[1]) * width + leftPadding;
+                    mY = Float.valueOf(params[2]) * height + topPadding;
+                    MSPowerPoint.drawLine(mX, mY);
                     System.out.println("Incoming commands: Drawing Line" + mX + "," + mY);
                     break;
                 case Commands.PenUp:
-                    endX = Float.valueOf(params[1]) * width;
-                    endY = Float.valueOf(params[2]) * height;
-                    MSPowerPoint.drawLine(mX, mY, endX, endY);
-                    mX = endX;
-                    mY = endY;
+                    mX = Float.valueOf(params[1]) * width + leftPadding;
+                    mY = Float.valueOf(params[2]) * height + topPadding;
+                    MSPowerPoint.drawLine(mX, mY);
+                    MSPowerPoint.penUp();
+                    break;
+                case Commands.GOTO_PREV_SLIDE:
+                    MSPowerPoint.gotoPrevious();
+                    break;
+                case Commands.GOTO_NEXT_SLIDE:
+                    MSPowerPoint.gotoNext();
+                    break;
+                case Commands.GOTO_SLIDE:
+                    MSPowerPoint.gotoSlide(Integer.valueOf(params[1]));
+                    break;
+                case Commands.SAVE_INK:
+                    MSPowerPoint.saveInkFile(command.substring(command.indexOf(",")+1));
+                    break;
+                case Commands.NEW_SLIDE:
+                    MSPowerPoint.addNewSlide(Integer.valueOf(params[1]));
+                    break;
             }
         }
     }

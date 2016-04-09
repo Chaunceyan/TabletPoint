@@ -12,6 +12,10 @@ public interface ComIPresentation {
     ComISlideShowSettings getSlideShowSettings();
     @ComProperty
     ComIPageSetup getPageSetup();
+    @ComProperty
+    ComICustomXMLParts getCustomXMLParts();
+    @ComProperty
+    ComISlides getSlides();
     @ComMethod
     void Close();
     @ComMethod

@@ -6,4 +6,10 @@
     tools:context="com.wise.vub.tabletpoint.PresentationFragment">
     <include layout="@layout/sample_scrible_view"/>
 
+    <ListView
+        android:id="@+id/list_view_annotation"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.2"/>
+
 </LinearLayout>
