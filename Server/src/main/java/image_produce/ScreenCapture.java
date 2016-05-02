@@ -27,6 +27,7 @@ public class ScreenCapture {
 	public static BufferedImage getScreenCapture() {
 		Rectangle rec2 = getScreenCaptureBound();
 		System.out.println(rec2.x + "," + rec2.y + "," + rec2.width + "," + rec2.height );
+		// Or change this
 		BufferedImage screenCapture = ServerFactory.getRobot().createScreenCapture(rec2);
 		return screenCapture;
 	}
@@ -36,7 +37,8 @@ public class ScreenCapture {
 		int height;
 		int x = 0;
 		int y = 0;
-        Rectangle b = getScreenBounds().get(0);
+		// Change this
+        Rectangle b = getScreenBounds().get(1);
         width = b.width;
         height = b.height;
 		return cropImage(x, y, width, height);

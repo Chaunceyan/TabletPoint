@@ -31,6 +31,7 @@ public final class MSPowerPoint {
         ComPowerPoint_Application powerpoint = factory.createObject(ComPowerPoint_Application.class);
         app = powerpoint.queryInterface(ComIApplication.class);
         robot = ServerFactory.getRobot();
+        robot.setAutoDelay(15);
     }
     private MSPowerPoint(){}
     public static boolean openFile(String fileUrl) {
@@ -98,9 +99,9 @@ public final class MSPowerPoint {
             return false;
         }
     }
-    public static boolean setPointerColor (Color color) {
+    public static boolean setPointerColor (int color) {
         if (view != null) {
-            view.getPointerColor().setRGB(color.getRGB());
+            view.getPointerColor().setRGB(color);
             return true;
         } else {
             return false;
@@ -120,11 +121,6 @@ public final class MSPowerPoint {
     public static boolean drawLine(float x, float y) {
         if (isForegroundWindow()) {
             robot.mouseMove(Math.round(x), Math.round(y));
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             return true;
         } else {
             return false;
@@ -200,5 +196,9 @@ public final class MSPowerPoint {
         User32 INSTANCE = (User32) Native.loadLibrary("user32", User32.class);
         WinDef.HWND GetForegroundWindow();  // add this
         int GetWindowTextA(PointerType hWnd, byte[] lpString, int nMaxCount);
+    }
+
+    public static int transformColor(Color color) {
+        return  color.getRed() + color.getGreen() * 256 + color.getBlue()*256*256;
     }
 }

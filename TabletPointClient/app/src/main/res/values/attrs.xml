@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="SlideshowView">
+        <attr name="slideshowDrawable" format="reference"/>
+    </declare-styleable>
+    <item type="id" name="image_tag"/>
+</resources>

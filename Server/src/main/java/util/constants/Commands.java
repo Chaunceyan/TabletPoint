@@ -13,4 +13,5 @@ public class Commands
     public static final int GOTO_SLIDE = 0x25;
     public static final int SAVE_INK = 0x26;
     public static final int NEW_SLIDE = 0x27;
+    public static final int SET_COLOR = 0x28;
 }

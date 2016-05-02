@@ -17,5 +17,6 @@
     <orderEntry type="library" name="Maven: bluecove:javax.bluetooth:1.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.poi:poi:3.13" level="project" />
     <orderEntry type="library" name="Maven: commons-codec:commons-codec:1.9" level="project" />
+    <orderEntry type="library" name="commons-io:commons-io:2.5" level="project" />
   </component>
 </module>

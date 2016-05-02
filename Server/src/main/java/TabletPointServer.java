@@ -1,7 +1,9 @@
+import org.apache.commons.io.FileUtils;
 import server.SPPServer;
 import util.powerpoint.MSPowerPoint;
 import util.powerpoint.interfaces.PpSlideShowPointerType;
 
+import java.awt.*;
 import java.io.*;
 
 import javax.bluetooth.*;
@@ -35,8 +37,11 @@ public class TabletPointServer {
             File temp = new File("SlideImages");
             MSPowerPoint.openFile(fileName);
             MSPowerPoint.present();
+            MSPowerPoint.setPointerColor(
+                    MSPowerPoint.transformColor(Color.BLACK)
+            );
+            FileUtils.deleteDirectory(temp.getAbsoluteFile());
             MSPowerPoint.savePresentationAsJPG(temp.getAbsolutePath());
-//            MSPowerPoint.saveInkFile("InkXML.xml");
         }
         SPPServer server = new SPPServer();
         server.run();

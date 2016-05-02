@@ -1,5 +1,6 @@
 package server.Connections;
 
+import com.sun.org.apache.xpath.internal.SourceTree;
 import image_produce.ScreenCapture;
 import util.XMLWriter;
 import util.constants.Commands;
@@ -13,12 +14,15 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.microedition.io.StreamConnection;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -69,7 +73,7 @@ public class ConnectionThread implements Runnable {
         private boolean sendFlag = true;
         private int width = Math.round(MSPowerPoint.getSlideShowViewWidth());
         private final int imageType = BufferedImage.TYPE_USHORT_555_RGB;
-        private int fileIndex;
+        private int fileCount;
 
         private ConnectionService () {
             try {
@@ -81,7 +85,7 @@ public class ConnectionThread implements Runnable {
                 param = writer.getDefaultWriteParam();
                 param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
                 param.setCompressionQuality(0.5f);
-                fileIndex = 0;
+                fileCount = 0;
                 ScreenCapture.init();
 
             } catch (IOException e) {
@@ -99,13 +103,14 @@ public class ConnectionThread implements Runnable {
                     writer.setOutput( ImageIO.createImageOutputStream(imageOut));
                     command = reader.readLine();
                     if (command != null) {
-                        System.out.println("Incoming command: " + command);
                         if (command.equals(Constants.IMAGE_REQEUST)) {
                             sendImage();
                         } else if (command.equals(Constants.SLIDE_PREVIEW_REQUEST)) {
-                            File[] files = new File("SlideImages").listFiles();
+                            File temp = new File("SlideImages");
+                            File[] files = temp.listFiles();
+                            sort(files);
                             out.write(ByteBuffer.allocate(4).putInt(files.length).array());
-                            sendSlidesPreview(fileIndex++, files);
+                            sendSlidesPreview(files);
                         } else if (command.equals(Constants.INKXML_REQUEST)) {
                             System.out.println(MSPowerPoint.readInkFile());
                             out.write((String.valueOf(ScreenCapture.getSlideViewRatio())
@@ -122,14 +127,34 @@ public class ConnectionThread implements Runnable {
             }
         }
 
-        private boolean sendSlidesPreview(int index, File[] files) {
-            if(index < files.length) {
-                sendFile(files[index]);
-                index ++;
-                return true;
-            } else {
-                return false;
+        private void sort(File[] files) {
+            Arrays.sort(files, new Comparator<File>() {
+                        @Override
+                        public int compare(File o1, File o2) {
+                            int n1 = extractNumebr(o1.getName());
+                            int n2 = extractNumebr(o2.getName());
+                            return n1 - n2;
+                        }
+
+                        private int extractNumebr (String name) {
+                            int endIndex = name.lastIndexOf('.');
+                            int number = Integer.valueOf(name.substring(5, endIndex));
+                            return  number;
+                        }
+                    });
+                for (File file : files) {
+                    System.out.println(file.getName());
+                }
+        }
+
+        private boolean sendSlidesPreview (File[] files) throws IOException {
+            for (File file : files) {
+                sendFile(file);
+                if (!reader.readLine().equalsIgnoreCase(Constants.FILE_RECEIVED)){
+                    return false;
+                }
             }
+            return true;
         }
 
         public void sendImage() {
@@ -259,6 +284,11 @@ public class ConnectionThread implements Runnable {
                     break;
                 case Commands.NEW_SLIDE:
                     MSPowerPoint.addNewSlide(Integer.valueOf(params[1]));
+                    MSPowerPoint.savePresentationAsJPG(new File("SlideImages").getAbsolutePath());
+                    break;
+                case Commands.SET_COLOR:
+                    int color = MSPowerPoint.transformColor(new Color(Integer.valueOf(params[1])));
+                    MSPowerPoint.setPointerColor(color);
                     break;
             }
         }
