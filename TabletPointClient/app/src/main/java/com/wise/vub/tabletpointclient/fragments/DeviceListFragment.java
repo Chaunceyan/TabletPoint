@@ -71,7 +71,7 @@ public class DeviceListFragment extends Fragment {
                 ((TabletPoint) getActivity()).startConnection(socket);
             } catch (IOException e) {
                 e.printStackTrace();
-            } ;
+            }
         }
     }
 

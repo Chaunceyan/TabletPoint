@@ -182,7 +182,9 @@ public class TabletPoint extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     int slideNumber = (int) v.getTag(R.id.image_tag);
-                    mBTHandler.obtainMessage(Constants.SEND_GOTO_SLIDE, slideNumber).sendToTarget();
+                    mBTHandler.sendMessageAtFrontOfQueue(
+                            mBTHandler.obtainMessage(Constants.SEND_GOTO_SLIDE, slideNumber)
+                    );
                     slideshowView.mCurrentSlide = slideNumber;
                 }
             });

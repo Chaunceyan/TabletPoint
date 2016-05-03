@@ -53,7 +53,7 @@ public final class MSPowerPoint {
     }
     public static boolean gotoSlide(int slideIndex) {
         if(view != null) {
-            view.GotoSlide(slideIndex, MsoTriState.msoTrue);
+            view.GotoSlide(slideIndex, MsoTriState.msoFalse);
             return true;
         } else {
             return false;

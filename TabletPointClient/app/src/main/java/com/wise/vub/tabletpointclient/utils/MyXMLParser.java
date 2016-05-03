@@ -66,9 +66,6 @@ public class MyXMLParser {
                                 ArrayList<String> pointsArray = new ArrayList<String>(Arrays.asList(points));
                                 Iterator<String> ite = pointsArray.iterator();
                                 if (ite.hasNext()) {
-                                    String mX = ite.next();
-                                    String mY = ite.next();
-                                    Log.d("XML Parser",mX + mY);
                                     float x = Float.valueOf(ite.next()) * width;
                                     float y = Float.valueOf(ite.next()) * height;
                                     path.moveTo(x, y);
@@ -102,7 +99,6 @@ public class MyXMLParser {
         return null;
     }
     public static String pathsToXML (ArrayList<ArrayList<MyPath>> graphs) {
-        if (graphs.size() == 0) return null;
         Iterator<ArrayList<MyPath>> iterator = graphs.iterator();
         StringBuilder stringBuilder = new StringBuilder();
         int slideNumber = 0;

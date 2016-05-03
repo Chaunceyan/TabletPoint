@@ -102,6 +102,7 @@ public class ConnectionThread implements Runnable {
                     imageOut = new FileOutputStream(tempImage);
                     writer.setOutput( ImageIO.createImageOutputStream(imageOut));
                     command = reader.readLine();
+                    System.out.println("Incoming commnads: " + command);
                     if (command != null) {
                         if (command.equals(Constants.IMAGE_REQEUST)) {
                             sendImage();
@@ -269,6 +270,7 @@ public class ConnectionThread implements Runnable {
                     mY = Float.valueOf(params[2]) * height + topPadding;
                     MSPowerPoint.drawLine(mX, mY);
                     MSPowerPoint.penUp();
+                    System.out.println("Incoming commands: Pen Up." + mX + "," + mY);
                     break;
                 case Commands.GOTO_PREV_SLIDE:
                     MSPowerPoint.gotoPrevious();

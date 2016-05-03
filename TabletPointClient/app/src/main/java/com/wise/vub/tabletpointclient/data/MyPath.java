@@ -67,6 +67,12 @@ public class MyPath extends Path {
         mPoints.add(point);
     }
 
+    @Override
+    public void rewind() {
+        super.rewind();
+        mPoints.clear();
+    }
+
     public void lineToEnd(float x, float y) {
         super.lineTo(x, y);
         mPoints.clear();

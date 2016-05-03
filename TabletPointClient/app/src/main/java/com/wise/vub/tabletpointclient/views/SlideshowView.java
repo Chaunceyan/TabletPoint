@@ -254,7 +254,7 @@ public class SlideshowView extends View {
                 mPath.rewind();
                 mPath.setmColor(mColor);
                 mPath.moveTo(mX, mY);
-                mPath.lineToEnd(x, mY);
+                mPath.lineTo(x, mY);
                 mPath.lineTo(x, y);
                 mPath.lineTo(mX, y);
                 mPath.lineTo(mX, mY);
@@ -263,7 +263,7 @@ public class SlideshowView extends View {
                 mPath.rewind();
                 mPath.setmColor(mColor);
                 mPath.moveTo(mX, mY);
-                mPath.lineToEnd(x, mY);
+                mPath.lineTo(x, mY);
                 mPath.lineTo(x, y);
                 mPath.lineTo(mX, y);
                 mPath.lineTo(mX, mY);
@@ -286,7 +286,6 @@ public class SlideshowView extends View {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mEraserPath = new MyPath();
-                mPath.setmColor(mColor);
                 mEraserPath.moveTo(x, y);
                 btHandler.handleMessage(
                         btHandler.obtainMessage(Constants.SEND_ERASER_DOWN, new Point(x, y)));
@@ -367,21 +366,24 @@ public class SlideshowView extends View {
         Vector<Point> points = path.getPoints();
         Iterator<Point> iterator = points.iterator();
         Point point = iterator.next();
-        btHandler.sendMessageAtFrontOfQueue(
+        btHandler.handleMessage(
                 btHandler.obtainMessage(Constants.SEND_PEN_DOWN, point)
         );
         while (iterator.hasNext()) {
-            point = iterator.next();
-            if (point.getX() > 0) {
-                btHandler.sendMessageAtFrontOfQueue(
-                        btHandler.obtainMessage(Constants.SEND_PEN_MOVE, point)
+            Point tempPoint = iterator.next();
+            if (tempPoint.getX() > 0) {
+                btHandler.handleMessage(
+                        btHandler.obtainMessage(Constants.SEND_PEN_MOVE, tempPoint)
                 );
                 Log.d("TabletPoint", "AnnotationMovement: " + point.getX() + "," + point.getY());
+                point = tempPoint;
+            } else {
+                btHandler.handleMessage(
+                        btHandler.obtainMessage(Constants.SEND_PEN_UP, point)
+                );
             }
         }
-        btHandler.sendMessageAtFrontOfQueue(
-                btHandler.obtainMessage(Constants.SEND_PEN_UP, point)
-        );
+
     }
 
 }

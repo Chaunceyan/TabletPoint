@@ -38,7 +38,7 @@ public class ScreenCapture {
 		int x = 0;
 		int y = 0;
 		// Change this
-        Rectangle b = getScreenBounds().get(1);
+        Rectangle b = getScreenBounds().get(0);
         width = b.width;
         height = b.height;
 		return cropImage(x, y, width, height);
