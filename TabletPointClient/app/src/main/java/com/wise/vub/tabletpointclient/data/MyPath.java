@@ -2,11 +2,13 @@ package com.wise.vub.tabletpointclient.data;
 
 import android.graphics.Color;
 import android.graphics.Path;
+import android.os.Build;
 import android.util.Log;
 
 import com.wise.vub.tabletpointclient.TabletPoint;
 
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Vector;
 
 /**
@@ -51,6 +53,10 @@ public class MyPath extends Path {
         return mPoints;
     }
 
+    public void setPoints(Vector<Point> points) {
+        mPoints = points;
+    }
+
     @Override
     public void moveTo(float x, float y) {
         super.moveTo(x, y);
@@ -71,6 +77,27 @@ public class MyPath extends Path {
     public void rewind() {
         super.rewind();
         mPoints.clear();
+    }
+
+    @Override
+    public void offset(float x, float y) {
+        super.offset(x, y);
+        for (Point point: mPoints) {
+            if (point.getNormalX() >= 0)
+                point.offset(x, y);
+        }
+    }
+    @Override
+    public Object clone() {
+        MyPath path;
+        try {
+            path = (MyPath) super.clone();
+            path.setPoints(this.getPoints());
+            return path;
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public void lineToEnd(float x, float y) {

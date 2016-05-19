@@ -1,9 +1,26 @@
 package com.wise.vub.tabletpointclient.fragments;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.AnimatedStateListDrawable;
+import android.graphics.drawable.AnimatedVectorDrawable;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.VectorDrawable;
+import android.graphics.drawable.shapes.OvalShape;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 
 import android.os.Handler;
@@ -15,17 +32,24 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AnticipateInterpolator;
+import android.view.animation.OvershootInterpolator;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.Toast;
 
+import com.ogaclejapan.arclayout.Arc;
+import com.ogaclejapan.arclayout.ArcLayout;
 import com.wise.vub.tabletpointclient.R;
 import com.wise.vub.tabletpointclient.TabletPoint;
 import com.wise.vub.tabletpointclient.adapters.AnnotationListAdapter;
 import com.wise.vub.tabletpointclient.data.MyPath;
 import com.wise.vub.tabletpointclient.data.Point;
+import com.wise.vub.tabletpointclient.utils.AnimatorUtils;
 import com.wise.vub.tabletpointclient.utils.Constants;
 import com.wise.vub.tabletpointclient.utils.MyXMLParser;
 import com.wise.vub.tabletpointclient.views.SlideshowView;
@@ -37,12 +61,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.Vector;
 
 public class PresentationFragment extends Fragment {
 
     private AnnotationListAdapter annotationListAdapter;
+    View fab;
+    View menuLayout;
+    ArcLayout arcLayout;
 
     public PresentationFragment() {
         // Required empty public constructor
@@ -64,7 +93,6 @@ public class PresentationFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment.
         View rootView = inflater.inflate(R.layout.fragment_presentation, container, false);
-
         // Handler for slides preview.
         final Handler btHandler = ((TabletPoint) getActivity()).mBTHandler;
         btHandler.obtainMessage(Constants.SEND_SLIDE_PREVIEW_REQUEST).sendToTarget();
@@ -80,7 +108,7 @@ public class PresentationFragment extends Fragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                slideshowView.addAnnotation((ArrayList<MyPath>) parent.getItemAtPosition(position));
+                slideshowView.addAnnotation((ArrayList<MyPath>) ((ArrayList<MyPath>) parent.getItemAtPosition(position)).clone());
             }
         });
 
@@ -100,7 +128,6 @@ public class PresentationFragment extends Fragment {
         ImageButton previous = (ImageButton) rootView.findViewById(R.id.image_button_previous);
         ImageButton next = (ImageButton) rootView.findViewById(R.id.image_button_next);
         ImageButton save = (ImageButton) rootView.findViewById(R.id.image_button_save_ink);
-        ImageButton reload = (ImageButton) rootView.findViewById(R.id.image_button_reload);
         ImageButton newSlide = (ImageButton) rootView.findViewById(R.id.image_button_new_slide);
 
         previous.setOnClickListener(new View.OnClickListener() {
@@ -157,15 +184,6 @@ public class PresentationFragment extends Fragment {
             }
         });
 
-        reload.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                btHandler.sendMessageAtFrontOfQueue(
-                        btHandler.obtainMessage(Constants.SEND_SLIDE_PREVIEW_REQUEST)
-                );
-            }
-        });
-
         newSlide.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -174,28 +192,159 @@ public class PresentationFragment extends Fragment {
                 );
             }
         });
+
+        fab = rootView.findViewById(R.id.fab);
+        menuLayout = rootView.findViewById(R.id.menu_layout);
+        arcLayout = (ArcLayout) rootView.findViewById(R.id.arc_layout);
+        arcLayout.setArc(Arc.BOTTOM_RIGHT);
+
+        for (int i = 0, size = arcLayout.getChildCount(); i < size; i++) {
+            arcLayout.getChildAt(i).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    int drawableId = 0;
+                    switch (v.getId()) {
+                        case R.id.pen_button:
+                            onToolsSelected(Constants.PEN_MENU_ID);
+                            drawableId = R.drawable.pen;
+                            break;
+                        case R.id.pencil_button:
+                            onToolsSelected(Constants.PENCIL_MENU_ID);
+                            drawableId = R.drawable.pencil;
+                            break;
+                        case R.id.eraser_button:
+                            onToolsSelected(Constants.ERASER_MENU_ID);
+                            drawableId = R.drawable.eraser;
+                            break;
+                        case R.id.line_button:
+                            onToolsSelected(Constants.LINE_MENU_ID);
+                            drawableId = R.drawable.line;
+                            break;
+                        case R.id.square_button:
+                            onToolsSelected(Constants.SQUARE_MENU_ID);
+                            drawableId = R.drawable.square;
+                            break;
+                        case R.id.magic_wand_button:
+                            onToolsSelected(Constants.MAGIC_WAND_ID);
+                            drawableId = R.drawable.magic_wand;
+                            break;
+                        case R.id.color_button:
+                            onToolsSelected(Constants.COLOR_PICKER);
+                            return;
+                    }
+                    hideMenu();
+                    ((ImageButton)fab).setImageDrawable(
+                            getResources().getDrawable(drawableId)
+                    );
+                }
+            });
+        }
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onFabClick(v);
+                onToolsSelected(v.getId());
+            }
+        });
         return rootView;
     }
 
-
-    // Option Menu To Select which tool to use.
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        // TODO Add your menu entries here
-        super.onCreateOptionsMenu(menu, inflater);
-        menu.add(0, Constants.PENCIL_MENU_ID, 0, "Pencil");
-        menu.add(0, Constants.PEN_MENU_ID, 0, "Pen");
-        menu.add(0, Constants.ERASER_MENU_ID, 0, "Eraser");
-        menu.add(0, Constants.LINE_MENU_ID, 0, "Line");
-        menu.add(0, Constants.SQUARE_MENU_ID, 0, "Square");
-        menu.add(0, Constants.COLOR_PICKER, 0, "Color");
+    private void onFabClick(View v) {
+        if (v.isSelected()) {
+            hideMenu();
+        } else {
+            showMenu();
+        }
+        v.setSelected(!v.isSelected());
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    @SuppressWarnings("NewApi")
+    private void showMenu() {
+        menuLayout.setVisibility(View.VISIBLE);
+        menuLayout.setClickable(true);
+        List<Animator> animList = new ArrayList<>();
+
+        for (int i = 0, len = arcLayout.getChildCount(); i < len; i++) {
+            animList.add(createShowItemAnimator(arcLayout.getChildAt(i)));
+        }
+
+        AnimatorSet animSet = new AnimatorSet();
+        animSet.setDuration(400);
+        animSet.setInterpolator(new OvershootInterpolator());
+        animSet.playTogether(animList);
+        animSet.start();
+    }
+
+    @SuppressWarnings("NewApi")
+    private void hideMenu() {
+
+        List<Animator> animList = new ArrayList<>();
+
+        for (int i = arcLayout.getChildCount() - 1; i >= 0; i--) {
+            animList.add(createHideItemAnimator(arcLayout.getChildAt(i)));
+        }
+
+        AnimatorSet animSet = new AnimatorSet();
+        animSet.setDuration(400);
+        animSet.setInterpolator(new AnticipateInterpolator());
+        animSet.playTogether(animList);
+        animSet.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+                menuLayout.setVisibility(View.INVISIBLE);
+            }
+        });
+        animSet.start();
+
+    }
+
+    private Animator createShowItemAnimator(View item) {
+
+        float dx = fab.getX() - item.getX();
+        float dy = fab.getY() - item.getY();
+
+        item.setRotation(0f);
+        item.setTranslationX(dx);
+        item.setTranslationY(dy);
+
+        Animator anim = ObjectAnimator.ofPropertyValuesHolder(
+                item,
+                AnimatorUtils.rotation(0f, 720f),
+                AnimatorUtils.translationX(dx, 0f),
+                AnimatorUtils.translationY(dy, 0f)
+        );
+
+        return anim;
+    }
+
+    private Animator createHideItemAnimator(final View item) {
+        float dx = fab.getX() - item.getX();
+        float dy = fab.getY() - item.getY();
+
+        Animator anim = ObjectAnimator.ofPropertyValuesHolder(
+                item,
+                AnimatorUtils.rotation(720f, 0f),
+                AnimatorUtils.translationX(0f, dx),
+                AnimatorUtils.translationY(0f, dy)
+        );
+
+        anim.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+                item.setTranslationX(0f);
+                item.setTranslationY(0f);
+            }
+        });
+
+        return anim;
+    }
+
+    public boolean onToolsSelected(int itemId) {
         // Handle item selection
         final SlideshowView slideshowView = (SlideshowView) getActivity().findViewById(R.id.view_slideshow);
-        switch (item.getItemId()) {
+        switch (itemId) {
             case Constants.PENCIL_MENU_ID:
                 slideshowView.setPenStroke(Constants.PENCIL_MENU_ID);
                 break;
@@ -211,6 +360,9 @@ public class PresentationFragment extends Fragment {
             case Constants.SQUARE_MENU_ID:
                 slideshowView.setPenStroke(Constants.SQUARE_MENU_ID);
                 break;
+            case Constants.MAGIC_WAND_ID:
+                slideshowView.setPenStroke(Constants.MAGIC_WAND_ID);
+                break;
             case Constants.COLOR_PICKER:
                 int[] mColors = getResources().getIntArray(R.array.default_rainbow);
                 final int[] mSelectedColor = {ContextCompat.getColor(getActivity(), R.color.flamingo)};
@@ -222,10 +374,16 @@ public class PresentationFragment extends Fragment {
 
                 dialog.setOnColorSelectedListener(new ColorPickerSwatch.OnColorSelectedListener() {
 
+                    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
                     @Override
                     public void onColorSelected(int color) {
                         mSelectedColor[0] = color;
                         slideshowView.setColor(color);
+                        Drawable background = ((ImageButton)fab).getBackground();
+                        ((GradientDrawable)background).setColor(color);
+                        ((ImageButton) fab).setBackground(background);
+                        fab.invalidate();
+                        hideMenu();
                     }
 
                 });

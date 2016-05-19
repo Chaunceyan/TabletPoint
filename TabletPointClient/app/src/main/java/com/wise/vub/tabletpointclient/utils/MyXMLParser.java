@@ -120,11 +120,10 @@ public class MyXMLParser {
                     float y = point.getY();
                     if (x > 0) {
                         stringBuilder.append(x+","+y+",");
-                    } else {
-                        stringBuilder.deleteCharAt(stringBuilder.lastIndexOf(","));
-                        stringBuilder.append("</Points></Path>");
                     }
                 }
+                stringBuilder.deleteCharAt(stringBuilder.lastIndexOf(","));
+                stringBuilder.append("</Points></Path>");
             }
             stringBuilder.append("</Paths>");
         }

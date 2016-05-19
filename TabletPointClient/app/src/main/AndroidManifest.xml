@@ -9,7 +9,6 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <service android:name=".services.BTConnectionService" />
         <activity
             android:name=".TabletPoint"
             android:label="@string/app_name"

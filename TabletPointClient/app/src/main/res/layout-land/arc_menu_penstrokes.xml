@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
+    <com.wise.vub.tabletpointclient.views.MyFrameLayout
+        android:id="@+id/menu_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/scrim"
+        android:visibility="invisible"
+        >
+
+        <com.ogaclejapan.arclayout.ArcLayout
+            android:id="@id/arc_layout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:arc_axisRadius="274dp"
+            app:arc_origin="center"
+            app:arc_radius="300dp"
+            >
+
+            <ImageButton
+                style="@style/Item.Large"
+                android:id="@+id/line_button"
+                android:background="@drawable/tumblr_grey_oval"
+                android:src="@drawable/line"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter"
+                android:padding="15dp"
+                />
+
+            <ImageButton
+                style="@style/Item.Large"
+                android:id="@+id/pencil_button"
+                android:background="@drawable/tumblr_grey_oval"
+                android:src="@drawable/pencil"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter"
+                android:padding="15dp"
+                />
+
+            <ImageButton
+                style="@style/Item.Large"
+                android:id="@+id/pen_button"
+                android:background="@drawable/tumblr_grey_oval"
+                android:src="@drawable/pen"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter"
+                android:padding="15dp"
+                />
+
+            <ImageButton
+                style="@style/Item.Large"
+                android:id="@+id/eraser_button"
+                android:background="@drawable/tumblr_grey_oval"
+                android:src="@drawable/eraser"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter"
+                android:padding="15dp"
+                />
+
+            <ImageButton
+                style="@style/Item.Large"
+                android:id="@+id/square_button"
+                android:background="@drawable/tumblr_grey_oval"
+                android:src="@drawable/square"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter"
+                android:padding="15dp"
+                />
+
+            <ImageButton
+                style="@style/Item.Large"
+                android:id="@+id/color_button"
+                android:background="@drawable/tumblr_grey_oval"
+                android:src="@drawable/color"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter"
+                android:padding="15dp"
+                />
+            <ImageButton
+                style="@style/Item.Large"
+                android:id="@+id/magic_wand_button"
+                android:background="@drawable/tumblr_grey_oval"
+                android:src="@drawable/magic_wand"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter"
+                android:padding="15dp"
+                />
+        </com.ogaclejapan.arclayout.ArcLayout>
+
+    </com.wise.vub.tabletpointclient.views.MyFrameLayout>
+
+    <ImageButton
+        android:id="@+id/fab"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/cyan_oval"
+        android:layout_gravity="bottom|end"
+        android:src="@drawable/pencil"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:padding="15dp"
+        />
+</merge>

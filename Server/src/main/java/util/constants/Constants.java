@@ -11,4 +11,5 @@ public class Constants {
     public static final String SLIDE_PREVIEW_REQUEST = "slide_preview_request";
     public static final String FILE_RECEIVED = "file_received";
     public static final String INKXML_REQUEST = "ink_xml_request";
+    public static final String NEW_SLIDE = "new_slide";
 }

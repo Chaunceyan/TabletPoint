@@ -30,9 +30,6 @@ public class SPPServer extends Thread {
         StreamConnectionNotifier streamConnNotifier = null;
         try {
             streamConnNotifier = (StreamConnectionNotifier) Connector.open( connectionString );
-
-            //Wait for client connection
-            System.out.println("Server Started. Waiting for clients to connect...");
             StreamConnection streamConnection = streamConnNotifier.acceptAndOpen();
             ConnectionThread connectionThread = new ConnectionThread(streamConnection);
             connectionThread.run();

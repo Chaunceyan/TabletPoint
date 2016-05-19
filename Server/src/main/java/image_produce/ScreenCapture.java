@@ -15,7 +15,6 @@ public class ScreenCapture {
 	public static float getSlideViewRatio() {
 		return slideViewRatio;
 	}
-
 	private static float slideViewRatio;
 
 	// Get only one piece of screen.

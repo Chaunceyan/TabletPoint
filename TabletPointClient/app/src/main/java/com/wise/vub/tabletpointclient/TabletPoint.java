@@ -6,16 +6,20 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.os.*;
 import android.os.Process;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Layout;
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -48,7 +52,6 @@ public class TabletPoint extends AppCompatActivity {
         setContentView(R.layout.activity_tablet_point);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
         mUIHandler = new UIHandler(Looper.getMainLooper(), this);
 
         // Check bluetooth enabled or not.
@@ -61,13 +64,6 @@ public class TabletPoint extends AppCompatActivity {
             DeviceListFragment deviceListFragment = new DeviceListFragment();
             getFragmentManager().beginTransaction().add(R.id.fragment_container, deviceListFragment).commit();
         }
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-            }
-        });
 
     }
 
@@ -115,7 +111,6 @@ public class TabletPoint extends AppCompatActivity {
         } else {
             Toast.makeText(this , "Connection Failed. Check if server is running.", Toast.LENGTH_LONG).show();
         }
-
     }
 
     protected class UIHandler extends Handler {
@@ -149,13 +144,16 @@ public class TabletPoint extends AppCompatActivity {
                     if (linearLayout != null) {
                         linearLayout.removeAllViewsInLayout();
                         while (iterator.hasNext()) {
-                            linearLayout.addView(
-                                populateImageView(iterator.next(), tag, slideshowView));
+                            View view = populateImageView(iterator.next(), tag, slideshowView);
+                            if (linearLayout.getChildCount()+1==slideshowView.mCurrentSlide) {
+                                view.setAlpha(0.75f);
+                            }
+                            linearLayout.addView(view);
                             tag++;
                         }
                     }
                     break;
-                case Constants.UPDATE_ANNOTAIONS:
+                case Constants.UPDATE_ANNOTATIONS:
                     ListView listView = (ListView) ((TabletPoint) mActivity.get()).
                                     findViewById(R.id.list_view_annotation);
                     AnnotationListAdapter annotationListAdapter =
@@ -168,11 +166,28 @@ public class TabletPoint extends AppCompatActivity {
                     ArrayList<ArrayList<MyPath>> graph = MyXMLParser.pathsFrom(xmlStr.substring(xmlStr.indexOf(",") +1), slideshowView.getWidth(), slideshowView.getHeight());
                     if (graph != null) annotationListAdapter.addAll(graph);
                     break;
+                case Constants.GOTO_NEW_SLIDE:
+                    linearLayout = (LinearLayout)
+                            ((TabletPoint) mActivity.get()).
+                                    findViewById(R.id.linear_layout_previews);
+                    linearLayout.invalidate();
+                    slideshowView.mCurrentSlide = linearLayout.getChildCount();
+                    mBTHandler.sendMessageAtFrontOfQueue(
+                            mBTHandler.obtainMessage(Constants.SEND_GOTO_SLIDE, slideshowView.mCurrentSlide)
+                    );
+                    HorizontalScrollView scrollView = (HorizontalScrollView) findViewById(R.id.scroll_view_previews);
+                    scrollView.fullScroll(HorizontalScrollView.FOCUS_RIGHT);
+                     for (int index = 0; index < linearLayout.getChildCount(); index++) {
+                         linearLayout.getChildAt(index).setAlpha(1);
+                         if(index == linearLayout.getChildCount() - 1)
+                            linearLayout.getChildAt(index).setAlpha(0.75f);
+                    }
+                    break;
             }
         }
 
         private View populateImageView(Bitmap bitmap, int tag, final SlideshowView slideshowView) {
-            LinearLayout linearLayout = (LinearLayout) View.inflate(mActivity.get(), R.layout.compound_view_previews, null);
+            final LinearLayout linearLayout = (LinearLayout) View.inflate(mActivity.get(), R.layout.compound_view_previews, null);
             ImageView imageView = (ImageView) linearLayout.findViewById(R.id.image_view_preview);
             imageView.setImageBitmap(bitmap);
             TextView textView = (TextView) linearLayout.findViewById(R.id.text_view_slide_number);
@@ -185,11 +200,15 @@ public class TabletPoint extends AppCompatActivity {
                     mBTHandler.sendMessageAtFrontOfQueue(
                             mBTHandler.obtainMessage(Constants.SEND_GOTO_SLIDE, slideNumber)
                     );
+                    LinearLayout viewholder = (LinearLayout) linearLayout.getParent();
+                    for (int index = 0; index < viewholder.getChildCount(); index++) {
+                        viewholder.getChildAt(index).setAlpha(1);
+                    }
+                    v.setAlpha(0.75f);
                     slideshowView.mCurrentSlide = slideNumber;
                 }
             });
             return linearLayout;
         }
-
     }
 }

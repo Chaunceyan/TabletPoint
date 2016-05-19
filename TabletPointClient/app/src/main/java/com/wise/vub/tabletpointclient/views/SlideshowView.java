@@ -1,13 +1,12 @@
 package com.wise.vub.tabletpointclient.views;
 
-import android.app.ActionBar;
-import android.app.Notification;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
@@ -15,15 +14,13 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.wise.vub.tabletpointclient.R;
 import com.wise.vub.tabletpointclient.TabletPoint;
 import com.wise.vub.tabletpointclient.data.MyPath;
 import com.wise.vub.tabletpointclient.data.Point;
 import com.wise.vub.tabletpointclient.utils.Constants;
-import com.wise.vub.tabletpointclient.utils.MyXMLParser;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -52,10 +49,13 @@ public class SlideshowView extends View {
     private Paint mCustomPaint;
     private MyPath mPath;
     private MyPath mEraserPath;
+    private MyPath mTempPath;
+    private ArrayList<MyPath> mStamp = new ArrayList<>();
+    private ArrayList<MyPath> mStampPaths = new ArrayList<>();
     private ArrayList<MyPath> mPencilPaths = new ArrayList<>();
     private ArrayList<MyPath> mPenPaths = new ArrayList<>();
     private Handler btHandler;
-    private int mColor;
+    private int mColor, mTempColor;
     private float mX, mY;
 
     public int mCurrentSlide = 1;
@@ -91,7 +91,7 @@ public class SlideshowView extends View {
         }
 
         mColor = Color.BLACK;
-
+        mTempColor = Color.BLUE;
         // Initiate paint with default size and color
         mCustomPaint = new Paint();
         mCustomPaint.setAntiAlias(true);
@@ -108,13 +108,14 @@ public class SlideshowView extends View {
         mCustomPaint.setColor(mColor);
         if(mStreaming)
             btHandler.sendMessageAtFrontOfQueue(
-                    btHandler.obtainMessage(Constants.SEND_SET_COLOR, color)
+                    btHandler.obtainMessage(Constants.SEND_SET_COLOR, mColor)
             );
     }
 
     public void updateBitmap(Bitmap bitmap) {
         mSlideshowDrawable = new BitmapDrawable(getResources(), bitmap);
         mStreaming = true;
+        this.getParent().requestDisallowInterceptTouchEvent(true);
         this.invalidate();
     }
 
@@ -145,6 +146,16 @@ public class SlideshowView extends View {
                     canvas.drawPath(path, mCustomPaint);
                 }
             }
+            if (mTempPath != null) {
+                mCustomPaint.setColor(mTempPath.getmColor());
+                canvas.drawPath(mTempPath, mCustomPaint);
+            }
+            if (mStampPaths != null) {
+                for (MyPath path : mStampPaths) {
+                    mCustomPaint.setColor(path.getmColor());
+                    canvas.drawPath(path, mCustomPaint);
+                }
+            }
         } else {
             mSlideshowDrawable.setBounds(0,0,getWidth(), getHeight());
             mSlideshowDrawable.draw(canvas);
@@ -153,8 +164,13 @@ public class SlideshowView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if((event.getButtonState() & MotionEvent.BUTTON_STYLUS_PRIMARY) != 0)
+        Toast.makeText(this.getContext(), "Detected", Toast.LENGTH_SHORT).show();
         if(mStreaming) {
             switch (mPenStroke) {
+                case Constants.MAGIC_WAND_ID:
+                    handleMagicWandEvent(event);
+                    break;
                 case Constants.PENCIL_MENU_ID:
                     handlePencilEvent(event);
                     break;
@@ -174,12 +190,126 @@ public class SlideshowView extends View {
                 case Constants.LINE_MENU_ID:
                     handleLineEvent(event);
                     break;
+                // Stamp
+                case Constants.STAMP_ID:
+                    handleStampEvent(event);
+                    break;
             }
             this.invalidate();
             return true;
         } else {
             return false;
         }
+    }
+
+    private void handleStampEvent(MotionEvent event) {
+        float x = event.getX(), y = event.getY();
+        float offsetX = x - getWidth()/2;
+        float offsetY = y - getHeight()/2;
+        mStampPaths.clear();
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                if (mStamp != null) {
+                    for (MyPath path : mStamp) {
+                        Vector<Point> points = path.getPoints();
+                        MyPath tempPath = new MyPath(mCurrentSlide);
+                        tempPath.moveTo(points.firstElement().getNormalX() + offsetX, points.firstElement().getNormalY() + offsetY);
+                        for (Point point: points) {
+                            if (point.getNormalX() >= 0) {
+                                tempPath.lineTo(point.getNormalX() + offsetX, point.getNormalY() + offsetY);
+                                mStampPaths.add(tempPath);
+                            }
+                        }
+                        mStampPaths.add(tempPath);
+                    }
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (mStamp != null) {
+                    for (MyPath path : mStamp) {
+                        Vector<Point> points = path.getPoints();
+                        MyPath tempPath = new MyPath(mCurrentSlide);
+                        tempPath.moveTo(points.firstElement().getNormalX() + offsetX, points.firstElement().getNormalY() + offsetY);
+                        for (Point point: points) {
+                            if (point.getNormalX() >= 0) {
+                                tempPath.lineTo(point.getNormalX() + offsetX, point.getNormalY() + offsetY);
+                            }
+                        }
+                        mStampPaths.add(tempPath);
+                    }
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                if (mStamp != null) {
+                    for (MyPath path : mStamp) {
+                        Vector<Point> points = path.getPoints();
+                        MyPath tempPath = new MyPath(mCurrentSlide);
+                        tempPath.moveTo(points.firstElement().getNormalX() + offsetX, points.firstElement().getNormalY() + offsetY);
+                        for (Point point: points) {
+                            if (point.getNormalX() >= 0) {
+                                tempPath.lineTo(point.getNormalX() + offsetX, point.getNormalY() + offsetY);
+                            } else {
+                                tempPath.endLine();
+                            }
+                        }
+                        mPencilPaths.add(tempPath);
+                        sendAnnotation(tempPath);
+                    }
+                    mStampPaths.clear();
+                }
+                break;
+        }
+        this.invalidate();
+    }
+
+    private void handleMagicWandEvent(MotionEvent event) {
+        float x = event.getX(), y = event.getY();
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                mTempPath = new MyPath();
+                mTempPath.setmColor(mTempColor);
+                mTempPath.moveTo(x, y);
+                btHandler.handleMessage(
+                        btHandler.obtainMessage(Constants.SEND_SET_COLOR, mTempColor)
+                );
+                btHandler.handleMessage(
+                        btHandler.obtainMessage(Constants.SEND_PEN_DOWN, new Point(x, y))
+                );
+                break;
+            case MotionEvent.ACTION_MOVE:
+                mTempPath.lineTo(x, y);
+                btHandler.handleMessage(
+                        btHandler.obtainMessage(Constants.SEND_PEN_MOVE, new Point(x, y))
+                );
+                break;
+            case MotionEvent.ACTION_UP:
+                mTempPath.lineTo(x, y);
+                btHandler.handleMessage(
+                        btHandler.obtainMessage(Constants.SET_COLOR, mColor)
+                );
+                btHandler.handleMessage(
+                        btHandler.obtainMessage(Constants.SEND_PEN_UP, new Point(x, y))
+                );
+                magicClean(x, y);
+        }
+        this.invalidate();
+    }
+
+    private void magicClean(final float x, final float y) {
+        final Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                mTempPath = null;
+                btHandler.handleMessage(
+                        btHandler.obtainMessage(Constants.SEND_ERASER_DOWN, new Point(x, y))
+                );
+                btHandler.handleMessage(
+                        btHandler.obtainMessage(Constants.SEND_PEN_UP, new Point(x, y))
+                );
+            }
+        };
+        Handler handler = new Handler();
+        handler.postDelayed(runnable, 5000);
     }
 
     private void handleLineEvent(MotionEvent event) {
@@ -192,7 +322,8 @@ public class SlideshowView extends View {
                 mX = x; mY = y;
                 mPenPaths.add(mPath);
                 btHandler.handleMessage(
-                        btHandler.obtainMessage(Constants.SEND_PEN_DOWN, new Point(x, y)));
+                        btHandler.obtainMessage(Constants.SEND_PEN_DOWN, new Point(x, y))
+                );
                 break;
             case MotionEvent.ACTION_MOVE:
                 mPath.rewind();
@@ -205,7 +336,8 @@ public class SlideshowView extends View {
                 mPath.lineTo(x, y);
                 mPath.endLine();
                 btHandler.handleMessage(
-                        btHandler.obtainMessage(Constants.SEND_PEN_UP, new Point(x, y)));
+                        btHandler.obtainMessage(Constants.SEND_PEN_UP, new Point(x, y))
+                );
                 break;
         }
         this.invalidate();
@@ -353,10 +485,14 @@ public class SlideshowView extends View {
 
     // Add annotation to current slide
     public void addAnnotation(ArrayList<MyPath> annotations) {
+        mStamp.clear();
         for (MyPath path : annotations) {
             path.setSlideNumber(mCurrentSlide);
-            mPencilPaths.add(path);
-            sendAnnotation(path);
+            path.setmColor(mColor);
+            mStamp.add(path);
+            mPenStroke = Constants.STAMP_ID;
+//            mPencilPaths.add(path);
+//            sendAnnotation(path);
         }
         invalidate();
     }
@@ -383,7 +519,5 @@ public class SlideshowView extends View {
                 );
             }
         }
-
     }
-
 }

@@ -70,6 +70,8 @@ public class BTConnectionHandler extends Handler {
                     break;
                 case Constants.SEND_NEW_SLIDE:
                     write(Constants.NEW_SLIDE + "," + ((Integer) msg.obj + 1 ) + "\r\n");
+                    receiveImages();
+                    mUIHandler.obtainMessage(Constants.GOTO_NEW_SLIDE).sendToTarget();
                     break;
                 case Constants.SEND_PEN_DOWN:
                     write(Constants.PenDown
@@ -110,7 +112,7 @@ public class BTConnectionHandler extends Handler {
         BufferedReader reader = new BufferedReader(new InputStreamReader(mInputStream));
         String xmlString = reader.readLine();
         mUIHandler.sendMessageAtFrontOfQueue(
-                mUIHandler.obtainMessage(Constants.UPDATE_ANNOTAIONS, xmlString));
+                mUIHandler.obtainMessage(Constants.UPDATE_ANNOTATIONS, xmlString));
         Log.d("TabletPoint", xmlString);
     }
 
@@ -165,6 +167,7 @@ public class BTConnectionHandler extends Handler {
         byte[] sizeBuffer = new byte[4];
         mInputStream.read(sizeBuffer);
         int fileNumber = ByteBuffer.wrap(sizeBuffer).getInt();
+        Log.d("TabletPoint", "File Number: " + fileNumber);
         do {
             mInputStream.read(sizeBuffer);
             int fileSize = ByteBuffer.wrap(sizeBuffer).getInt();
@@ -181,7 +184,7 @@ public class BTConnectionHandler extends Handler {
             Log.d("TabletPoint", "ImagePreviewSize: " + fileSize);
             BitmapFactory.Options options = new BitmapFactory.Options();
             Bitmap tempbitmap = BitmapFactory.decodeByteArray(fileBuffer ,0, fileSize, options);//Decode image, "thumbnail" is the object of image file
-            Bitmap bitmap = Bitmap.createScaledBitmap(tempbitmap, tempbitmap.getWidth() / 4, tempbitmap.getHeight() / 4, true);// convert decoded bitmap into well scalled Bitmap format.
+            Bitmap bitmap = Bitmap.createScaledBitmap(tempbitmap, tempbitmap.getWidth() / 4, tempbitmap.getHeight() / 4, true);// convert decoded bitmap into well scaled Bitmap format.
             bitmaps.add(bitmap);
             write(Constants.FILE_RECEIVED + "\r\n");
         } while (bitmaps.size() < fileNumber);

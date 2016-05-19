@@ -29,4 +29,5 @@ dependencies {
     compile 'com.android.support:recyclerview-v7:23.2.1'
     compile "com.daimajia.swipelayout:library:1.2.0@aar"
     compile 'org.xdty.preference:color-picker:0.0.4'
+    compile 'com.ogaclejapan.arclayout:library:1.1.0@aar'
 }

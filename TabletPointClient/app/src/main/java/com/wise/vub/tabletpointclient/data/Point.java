@@ -13,7 +13,6 @@ public class Point {
     }
 
     public float getX() {
-
         return x;
     }
 
@@ -30,4 +29,9 @@ public class Point {
     }
 
     private float x, y;
+
+    public void offset(float x, float y) {
+        this.x = this.x + x/width;
+        this.y = this.y + y/width;
+    }
 }

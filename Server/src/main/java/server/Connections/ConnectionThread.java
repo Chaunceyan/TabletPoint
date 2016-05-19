@@ -73,7 +73,6 @@ public class ConnectionThread implements Runnable {
         private boolean sendFlag = true;
         private int width = Math.round(MSPowerPoint.getSlideShowViewWidth());
         private final int imageType = BufferedImage.TYPE_USHORT_555_RGB;
-        private int fileCount;
 
         private ConnectionService () {
             try {
@@ -85,7 +84,6 @@ public class ConnectionThread implements Runnable {
                 param = writer.getDefaultWriteParam();
                 param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
                 param.setCompressionQuality(0.5f);
-                fileCount = 0;
                 ScreenCapture.init();
 
             } catch (IOException e) {
@@ -115,8 +113,21 @@ public class ConnectionThread implements Runnable {
                         } else if (command.equals(Constants.INKXML_REQUEST)) {
                             System.out.println(MSPowerPoint.readInkFile());
                             out.write((String.valueOf(ScreenCapture.getSlideViewRatio())
-                                    + "," +  MSPowerPoint.readInkFile()+"\r\n")
+                                    + "," + MSPowerPoint.readInkFile() + "\r\n")
                                     .getBytes());
+                        } else if (command.startsWith(Constants.NEW_SLIDE)) {
+                            String[] params = command.split(",");
+                            MSPowerPoint.addNewSlide(Integer.valueOf(params[1]));
+                            File temp = new File("SlideImages");
+                            int prevCount = temp.listFiles().length;
+                            MSPowerPoint.savePresentationAsJPG(new File("SlideImages").getAbsolutePath());
+                            File[] files = temp.listFiles();
+                            while (files.length <= prevCount) {
+                                files = temp.listFiles();
+                            }
+                            sort(files);
+                            out.write(ByteBuffer.allocate(4).putInt(files.length).array());
+                            sendSlidesPreview(files);
                         } else {
                             System.out.println("Putting commands into queue");
                             queue.add(command);
@@ -154,6 +165,7 @@ public class ConnectionThread implements Runnable {
                 if (!reader.readLine().equalsIgnoreCase(Constants.FILE_RECEIVED)){
                     return false;
                 }
+                System.out.println(file.getName());
             }
             return true;
         }
@@ -263,14 +275,12 @@ public class ConnectionThread implements Runnable {
                     mX = Float.valueOf(params[1]) * width + leftPadding;
                     mY = Float.valueOf(params[2]) * height + topPadding;
                     MSPowerPoint.drawLine(mX, mY);
-                    System.out.println("Incoming commands: Drawing Line" + mX + "," + mY);
                     break;
                 case Commands.PenUp:
                     mX = Float.valueOf(params[1]) * width + leftPadding;
                     mY = Float.valueOf(params[2]) * height + topPadding;
                     MSPowerPoint.drawLine(mX, mY);
                     MSPowerPoint.penUp();
-                    System.out.println("Incoming commands: Pen Up." + mX + "," + mY);
                     break;
                 case Commands.GOTO_PREV_SLIDE:
                     MSPowerPoint.gotoPrevious();
@@ -283,10 +293,6 @@ public class ConnectionThread implements Runnable {
                     break;
                 case Commands.SAVE_INK:
                     MSPowerPoint.saveInkFile(command.substring(command.indexOf(",")+1));
-                    break;
-                case Commands.NEW_SLIDE:
-                    MSPowerPoint.addNewSlide(Integer.valueOf(params[1]));
-                    MSPowerPoint.savePresentationAsJPG(new File("SlideImages").getAbsolutePath());
                     break;
                 case Commands.SET_COLOR:
                     int color = MSPowerPoint.transformColor(new Color(Integer.valueOf(params[1])));
