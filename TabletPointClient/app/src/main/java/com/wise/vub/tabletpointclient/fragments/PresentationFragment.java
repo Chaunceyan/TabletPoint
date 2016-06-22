@@ -19,6 +19,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.VectorDrawable;
 import android.graphics.drawable.shapes.OvalShape;
+import android.media.Image;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -109,6 +110,8 @@ public class PresentationFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 slideshowView.addAnnotation((ArrayList<MyPath>) ((ArrayList<MyPath>) parent.getItemAtPosition(position)).clone());
+                (getActivity().findViewById(R.id.layout_stamp_control)).setClickable(false);
+                (getActivity().findViewById(R.id.layout_stamp_control)).setVisibility(View.VISIBLE);
             }
         });
 
@@ -136,6 +139,11 @@ public class PresentationFragment extends Fragment {
                 slideshowView.mCurrentSlide -= 1;
                 btHandler.sendMessageAtFrontOfQueue(
                         btHandler.obtainMessage(Constants.SEND_GOTO_PREV));
+                LinearLayout previewList = (LinearLayout) getActivity().findViewById(R.id.linear_layout_previews);
+                for (int index = 0; index < previewList.getChildCount(); index++) {
+                    previewList.getChildAt(index).setAlpha(1);
+                }
+                previewList.getChildAt(slideshowView.mCurrentSlide + 1).setAlpha(0.5f);
             }
         });
 
@@ -145,6 +153,11 @@ public class PresentationFragment extends Fragment {
                 slideshowView.mCurrentSlide += 1;
                 btHandler.sendMessageAtFrontOfQueue(
                         btHandler.obtainMessage(Constants.SEND_GOTO_NEXT));
+                LinearLayout previewList = (LinearLayout) getActivity().findViewById(R.id.linear_layout_previews);
+                for (int index = 0; index < previewList.getChildCount(); index++) {
+                    previewList.getChildAt(index).setAlpha(1);
+                }
+                previewList.getChildAt(slideshowView.mCurrentSlide + 1).setAlpha(0.5f);
             }
         });
 
@@ -190,6 +203,43 @@ public class PresentationFragment extends Fragment {
                 btHandler.sendMessageAtFrontOfQueue(
                         btHandler.obtainMessage(Constants.SEND_NEW_SLIDE, linearLayout.getChildCount())
                 );
+            }
+        });
+
+        ImageButton zoomIn = (ImageButton) rootView.findViewById(R.id.button_zoom_in);
+        ImageButton zoomOut = (ImageButton) rootView.findViewById(R.id.button_zoom_out);
+        ImageButton confirm = (ImageButton) rootView.findViewById(R.id.button_confirm);
+        ImageButton cancel = (ImageButton) rootView.findViewById(R.id.button_cancel);
+
+        zoomIn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                slideshowView.zoomIn();
+            }
+        });
+
+        zoomOut.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                slideshowView.zoomOut();
+            }
+        });
+
+        confirm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                slideshowView.confirm();
+                (getActivity().findViewById(R.id.layout_stamp_control)).setVisibility(View.INVISIBLE);
+                (getActivity().findViewById(R.id.layout_stamp_control)).setClickable(true);
+            }
+        });
+
+        cancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                slideshowView.cancel();
+                (getActivity().findViewById(R.id.layout_stamp_control)).setVisibility(View.INVISIBLE);
+                (getActivity().findViewById(R.id.layout_stamp_control)).setClickable(true);
             }
         });
 

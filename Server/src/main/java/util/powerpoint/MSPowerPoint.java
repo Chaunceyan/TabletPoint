@@ -28,7 +28,8 @@ public final class MSPowerPoint {
     private static Robot robot;
     static {
         Factory factory = new Factory();
-        ComPowerPoint_Application powerpoint = factory.createObject(ComPowerPoint_Application.class);
+        ComPowerPoint_Application powerpoint = factory.
+                createObject(ComPowerPoint_Application.class);
         app = powerpoint.queryInterface(ComIApplication.class);
         robot = ServerFactory.getRobot();
         robot.setAutoDelay(15);

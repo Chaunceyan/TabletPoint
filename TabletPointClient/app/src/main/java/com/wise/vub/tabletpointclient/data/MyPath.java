@@ -108,7 +108,7 @@ public class MyPath extends Path {
     }
 
     public void endLine() {
-        Point point = new Point(-10, -10);
+        Point point = new Point(Float.NaN, Float.NaN);
         mPoints.add(point);
     }
 
@@ -118,13 +118,13 @@ public class MyPath extends Path {
         Point a1 = iterator1.next();
         while (iterator1.hasNext()) {
             Point b1 = iterator1.next();
-            if (b1.getNormalX() > 0) {
+            if (!Float.isNaN(b1.getNormalX())) {
                 Iterator<Point> iterator2 = mPoints.iterator();
                 Point a2 = iterator2.next();
                 while (iterator2.hasNext()) {
                     Point b2 = iterator2.next();
                     Log.d("TabletPoint", b2.getNormalX() + "," + b2.getNormalY());
-                    if (b2.getNormalX() > 0) {
+                    if (!Float.isNaN(b2.getNormalX())) {
                         if (intersectLine(a1.getNormalX(), a1.getNormalY(), b1.getNormalX(), b1.getNormalY(), a2.getNormalX(), a2.getNormalY(), b2.getNormalX(), b2.getNormalY())) {
                             Log.d("TabletPoint", "intersectPath: " + a1.getNormalX() + "," + a1.getNormalY() + "," + b1.getNormalX() + "," + b1.getNormalY() + "," + a2.getNormalX() + "," + a2.getNormalY() + "," + b2.getNormalX() + "," + b2.getNormalY());
                             return true;

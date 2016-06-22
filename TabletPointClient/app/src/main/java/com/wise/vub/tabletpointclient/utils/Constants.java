@@ -49,7 +49,8 @@ public class Constants {
     public static final int UPDATE_IMAGE = 1;
     public static final int UPDATE_PREVIEW = 2;
     public static final int UPDATE_ANNOTATIONS = 3;
-    public static final int GOTO_NEW_SLIDE  =4;
+    public static final int GOTO_NEW_SLIDE  = 4;
+    public static final int ADD_NEWSLIDE = 5;
     // Three types of pen stroke here.
     public static final int PENCIL_MENU_ID = Menu.FIRST;
     public static final int PEN_MENU_ID = Menu.FIRST + 1;
@@ -58,5 +59,4 @@ public class Constants {
     public static final int SQUARE_MENU_ID = Menu.FIRST + 4;
     public static final int COLOR_PICKER = Menu.FIRST + 5;
     public static final int MAGIC_WAND_ID = Menu.FIRST + 6;
-    public static final int STAMP_ID = Menu.FIRST + 7;
 }

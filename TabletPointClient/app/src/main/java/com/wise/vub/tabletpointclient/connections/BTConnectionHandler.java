@@ -70,7 +70,7 @@ public class BTConnectionHandler extends Handler {
                     break;
                 case Constants.SEND_NEW_SLIDE:
                     write(Constants.NEW_SLIDE + "," + ((Integer) msg.obj + 1 ) + "\r\n");
-                    receiveImages();
+                    receiveNewSlide();
                     mUIHandler.obtainMessage(Constants.GOTO_NEW_SLIDE).sendToTarget();
                     break;
                 case Constants.SEND_PEN_DOWN:
@@ -106,6 +106,27 @@ public class BTConnectionHandler extends Handler {
                 e.printStackTrace();
                 // Here I will need to handle the exception
         }
+    }
+
+    private void receiveNewSlide() throws IOException{
+        byte[] sizeBuffer = new byte[4];
+        mInputStream.read(sizeBuffer);
+        int fileSize = ByteBuffer.wrap(sizeBuffer).getInt();
+        int progress = 0;
+        // read one file
+        byte[] tempBuffer = new byte[Constants.CHUNK_SIZE];
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        while (progress < fileSize) {
+            int readSize = mInputStream.read(tempBuffer);
+            byteArrayOutputStream.write(tempBuffer, 0, readSize);
+            progress += readSize;
+        }
+        byte[] fileBuffer = byteArrayOutputStream.toByteArray();
+        Log.d("TabletPoint", "ImagePreviewSize: " + fileSize);
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        Bitmap tempbitmap = BitmapFactory.decodeByteArray(fileBuffer ,0, fileSize, options);//Decode image, "thumbnail" is the object of image file
+        Bitmap bitmap = Bitmap.createScaledBitmap(tempbitmap, tempbitmap.getWidth() / 4, tempbitmap.getHeight() / 4, true);// convert decoded bitmap into well scaled Bitmap format.
+        mUIHandler.obtainMessage(Constants.ADD_NEWSLIDE, bitmap).sendToTarget();
     }
 
     private void receiveInk() throws IOException {

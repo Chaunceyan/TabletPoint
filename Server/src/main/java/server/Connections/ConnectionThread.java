@@ -9,10 +9,7 @@ import util.powerpoint.MSPowerPoint;
 import util.powerpoint.interfaces.PpSlideShowPointerType;
 
 import javax.bluetooth.RemoteDevice;
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
+import javax.imageio.*;
 import javax.microedition.io.StreamConnection;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -39,8 +36,6 @@ public class ConnectionThread implements Runnable {
         this.streamConnection = streamConnection;
         queue = new ConcurrentLinkedQueue<String>();
     }
-
-
     public void run() {
         RemoteDevice dev;
         try {
@@ -63,7 +58,6 @@ public class ConnectionThread implements Runnable {
     private class ConnectionService implements Runnable {
         private String fileName = "TempFile";
         private File tempImage;
-        private File annotation;
         private ImageWriteParam param;
         private ImageWriter writer;
         private OutputStream imageOut;
@@ -78,7 +72,6 @@ public class ConnectionThread implements Runnable {
             try {
                 out = streamConnection.openOutputStream();
                 writer = ImageIO.getImageWritersByFormatName("jpg").next();
-
                 reader = new BufferedReader(new InputStreamReader(streamConnection.openInputStream()));
 
                 param = writer.getDefaultWriteParam();
@@ -100,7 +93,7 @@ public class ConnectionThread implements Runnable {
                     imageOut = new FileOutputStream(tempImage);
                     writer.setOutput( ImageIO.createImageOutputStream(imageOut));
                     command = reader.readLine();
-                    System.out.println("Incoming commnads: " + command);
+                    System.out.println("Incoming commands: " + command);
                     if (command != null) {
                         if (command.equals(Constants.IMAGE_REQEUST)) {
                             sendImage();
@@ -118,7 +111,7 @@ public class ConnectionThread implements Runnable {
                         } else if (command.startsWith(Constants.NEW_SLIDE)) {
                             String[] params = command.split(",");
                             MSPowerPoint.addNewSlide(Integer.valueOf(params[1]));
-                            File temp = new File("SlideImages");
+                            File temp = new File("SlideImages"); // Location of the saved slide images.
                             int prevCount = temp.listFiles().length;
                             MSPowerPoint.savePresentationAsJPG(new File("SlideImages").getAbsolutePath());
                             File[] files = temp.listFiles();
@@ -126,8 +119,7 @@ public class ConnectionThread implements Runnable {
                                 files = temp.listFiles();
                             }
                             sort(files);
-                            out.write(ByteBuffer.allocate(4).putInt(files.length).array());
-                            sendSlidesPreview(files);
+                            sendFile(files[files.length - 1]);
                         } else {
                             System.out.println("Putting commands into queue");
                             queue.add(command);
@@ -143,12 +135,12 @@ public class ConnectionThread implements Runnable {
             Arrays.sort(files, new Comparator<File>() {
                         @Override
                         public int compare(File o1, File o2) {
-                            int n1 = extractNumebr(o1.getName());
-                            int n2 = extractNumebr(o2.getName());
+                            int n1 = extractNumber(o1.getName());
+                            int n2 = extractNumber(o2.getName());
                             return n1 - n2;
                         }
 
-                        private int extractNumebr (String name) {
+                        private int extractNumber (String name) {
                             int endIndex = name.lastIndexOf('.');
                             int number = Integer.valueOf(name.substring(5, endIndex));
                             return  number;
@@ -219,7 +211,15 @@ public class ConnectionThread implements Runnable {
 
         private void sendFile (File file) {
             try {
-                byte[] data = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
+                InputStream tempInputStraem = new FileInputStream(file);
+                tempImage = new File(fileName);
+                tempImage.delete();
+                BufferedImage image = ImageIO.read(tempInputStraem);
+                imageOut = new FileOutputStream(tempImage);
+                writer.setOutput( ImageIO.createImageOutputStream(imageOut));
+                param.setCompressionQuality(0.2f);
+                writer.write(null, new IIOImage(image, null, null), param);
+                byte[] data = Files.readAllBytes(Paths.get(tempImage.getAbsolutePath()));
                 System.out.println(data.length);
                 out.write(ByteBuffer.allocate(4).putInt(data.length).array());
                 out.write(data);

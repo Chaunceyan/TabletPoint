@@ -103,16 +103,70 @@
                 android:layout_gravity="center"
                 app:slideshowDrawable="@android:drawable/alert_light_frame"
                 />
-            <ListView
-                android:id="@+id/list_view_annotation"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="0.2"
-                android:background="@android:drawable/alert_light_frame"
-                android:padding="3dp"
-                android:divider="@drawable/divider"
-                android:dividerHeight="2dp"
-                />
+                android:orientation="vertical"
+                >
+                <LinearLayout
+                    android:id="@+id/layout_stamp_control"
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:orientation="horizontal"
+                    android:clickable="true"
+                    android:visibility="invisible"
+                    android:paddingLeft="5dp"
+                    android:paddingRight="5dp"
+                    >
+                    <ImageButton
+                        android:id="@+id/button_zoom_in"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:src="@drawable/zoom_in"
+                        android:adjustViewBounds="true"
+                        android:scaleType="fitCenter"
+                        />
+                    <ImageButton
+                        android:id="@+id/button_zoom_out"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:src="@drawable/zoom_out"
+                        android:adjustViewBounds="true"
+                        android:scaleType="fitCenter"
+                        />
+                    <ImageButton
+                        android:id="@+id/button_confirm"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:src="@drawable/correct"
+                        android:adjustViewBounds="true"
+                        android:scaleType="fitCenter"
+                        />
+                    <ImageButton
+                        android:id="@+id/button_cancel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:src="@drawable/cancel"
+                        android:adjustViewBounds="true"
+                        android:scaleType="fitCenter"
+                        />
+                </LinearLayout>
+                <ListView
+                    android:id="@+id/list_view_annotation"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:background="@android:drawable/alert_light_frame"
+                    android:padding="3dp"
+                    android:divider="@drawable/divider"
+                    android:dividerHeight="2dp"
+                    />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
     <include layout="@layout/arc_menu_penstrokes"/>

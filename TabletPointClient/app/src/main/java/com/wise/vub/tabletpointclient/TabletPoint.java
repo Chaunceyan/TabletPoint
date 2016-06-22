@@ -89,10 +89,6 @@ public class TabletPoint extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -128,6 +124,9 @@ public class TabletPoint extends AppCompatActivity {
             SlideshowView slideshowView = (SlideshowView)
                             ((TabletPoint) mActivity.get()).
                                     findViewById(R.id.view_slideshow);
+            LinearLayout linearLayout = (LinearLayout)
+                            ((TabletPoint) mActivity.get()).
+                                    findViewById(R.id.linear_layout_previews);
             switch (msg.what) {
                 case Constants.UPDATE_IMAGE:
                     if (slideshowView != null) {
@@ -135,9 +134,6 @@ public class TabletPoint extends AppCompatActivity {
                     }
                     break;
                 case Constants.UPDATE_PREVIEW:
-                    LinearLayout linearLayout = (LinearLayout)
-                            ((TabletPoint) mActivity.get()).
-                                    findViewById(R.id.linear_layout_previews);
                     ArrayList<Bitmap> previews = (ArrayList<Bitmap>) msg.obj;
                     Iterator<Bitmap> iterator = previews.iterator();
                     int tag = 1;
@@ -151,6 +147,13 @@ public class TabletPoint extends AppCompatActivity {
                             linearLayout.addView(view);
                             tag++;
                         }
+                    }
+                    break;
+                case Constants.ADD_NEWSLIDE:
+                    Bitmap newSlide = (Bitmap) msg.obj;
+                    if (linearLayout != null) {
+                        View view = populateImageView(newSlide, linearLayout.getChildCount() + 1, slideshowView);
+                        linearLayout.addView(view);
                     }
                     break;
                 case Constants.UPDATE_ANNOTATIONS:

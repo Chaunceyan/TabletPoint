@@ -118,7 +118,7 @@ public class MyXMLParser {
                     Point point = pointIterator.next();
                     float x = point.getX();
                     float y = point.getY();
-                    if (x > 0) {
+                    if (!Float.isNaN(x)) {
                         stringBuilder.append(x+","+y+",");
                     }
                 }

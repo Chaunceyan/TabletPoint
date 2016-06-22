@@ -57,6 +57,7 @@ public class SlideshowView extends View {
     private Handler btHandler;
     private int mColor, mTempColor;
     private float mX, mY;
+    private boolean confirmedFlag;
 
     public int mCurrentSlide = 1;
 
@@ -92,6 +93,7 @@ public class SlideshowView extends View {
 
         mColor = Color.BLACK;
         mTempColor = Color.BLUE;
+        confirmedFlag = true;
         // Initiate paint with default size and color
         mCustomPaint = new Paint();
         mCustomPaint.setAntiAlias(true);
@@ -151,6 +153,7 @@ public class SlideshowView extends View {
                 canvas.drawPath(mTempPath, mCustomPaint);
             }
             if (mStampPaths != null) {
+                // mStampPaths is the one gets drawn to the screen.
                 for (MyPath path : mStampPaths) {
                     mCustomPaint.setColor(path.getmColor());
                     canvas.drawPath(path, mCustomPaint);
@@ -167,33 +170,33 @@ public class SlideshowView extends View {
         if((event.getButtonState() & MotionEvent.BUTTON_STYLUS_PRIMARY) != 0)
         Toast.makeText(this.getContext(), "Detected", Toast.LENGTH_SHORT).show();
         if(mStreaming) {
-            switch (mPenStroke) {
-                case Constants.MAGIC_WAND_ID:
-                    handleMagicWandEvent(event);
-                    break;
-                case Constants.PENCIL_MENU_ID:
-                    handlePencilEvent(event);
-                    break;
-                // Normal Pen
-                case Constants.PEN_MENU_ID:
-                    handlePenEvent(event);
-                    break;
-                // Eraser
-                case Constants.ERASER_MENU_ID:
-                    handleEraserEvent(event);
-                    break;
-                // Square
-                case Constants.SQUARE_MENU_ID:
-                    handleSquareEvent(event);
-                    break;
-                // Circle
-                case Constants.LINE_MENU_ID:
-                    handleLineEvent(event);
-                    break;
-                // Stamp
-                case Constants.STAMP_ID:
-                    handleStampEvent(event);
-                    break;
+            if (confirmedFlag) {
+                switch (mPenStroke) {
+                    case Constants.MAGIC_WAND_ID:
+                        handleMagicWandEvent(event);
+                        break;
+                    case Constants.PENCIL_MENU_ID:
+                        handlePencilEvent(event);
+                        break;
+                    // Normal Pen
+                    case Constants.PEN_MENU_ID:
+                        handlePenEvent(event);
+                        break;
+                    // Eraser
+                    case Constants.ERASER_MENU_ID:
+                        handleEraserEvent(event);
+                        break;
+                    // Square
+                    case Constants.SQUARE_MENU_ID:
+                        handleSquareEvent(event);
+                        break;
+                    // Circle
+                    case Constants.LINE_MENU_ID:
+                        handleLineEvent(event);
+                        break;
+                }
+            } else {
+                handleStampEvent(event);
             }
             this.invalidate();
             return true;
@@ -204,20 +207,22 @@ public class SlideshowView extends View {
 
     private void handleStampEvent(MotionEvent event) {
         float x = event.getX(), y = event.getY();
-        float offsetX = x - getWidth()/2;
-        float offsetY = y - getHeight()/2;
+
         mStampPaths.clear();
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 if (mStamp != null) {
                     for (MyPath path : mStamp) {
                         Vector<Point> points = path.getPoints();
+                        float offsetX = x - points.firstElement().getNormalX();
+                        float offsetY = y - points.firstElement().getNormalY();
                         MyPath tempPath = new MyPath(mCurrentSlide);
                         tempPath.moveTo(points.firstElement().getNormalX() + offsetX, points.firstElement().getNormalY() + offsetY);
                         for (Point point: points) {
-                            if (point.getNormalX() >= 0) {
+                            if (!Float.isNaN(point.getNormalX())) {
                                 tempPath.lineTo(point.getNormalX() + offsetX, point.getNormalY() + offsetY);
-                                mStampPaths.add(tempPath);
+                            } else {
+                                tempPath.endLine();
                             }
                         }
                         mStampPaths.add(tempPath);
@@ -228,11 +233,15 @@ public class SlideshowView extends View {
                 if (mStamp != null) {
                     for (MyPath path : mStamp) {
                         Vector<Point> points = path.getPoints();
+                        float offsetX = x - points.firstElement().getNormalX();
+                        float offsetY = y - points.firstElement().getNormalY();
                         MyPath tempPath = new MyPath(mCurrentSlide);
                         tempPath.moveTo(points.firstElement().getNormalX() + offsetX, points.firstElement().getNormalY() + offsetY);
                         for (Point point: points) {
-                            if (point.getNormalX() >= 0) {
+                            if (!Float.isNaN(point.getNormalX())) {
                                 tempPath.lineTo(point.getNormalX() + offsetX, point.getNormalY() + offsetY);
+                            } else {
+                                tempPath.endLine();
                             }
                         }
                         mStampPaths.add(tempPath);
@@ -243,19 +252,19 @@ public class SlideshowView extends View {
                 if (mStamp != null) {
                     for (MyPath path : mStamp) {
                         Vector<Point> points = path.getPoints();
+                        float offsetX = x - points.firstElement().getNormalX();
+                        float offsetY = y - points.firstElement().getNormalY();
                         MyPath tempPath = new MyPath(mCurrentSlide);
                         tempPath.moveTo(points.firstElement().getNormalX() + offsetX, points.firstElement().getNormalY() + offsetY);
                         for (Point point: points) {
-                            if (point.getNormalX() >= 0) {
+                            if (!Float.isNaN(point.getNormalX())) {
                                 tempPath.lineTo(point.getNormalX() + offsetX, point.getNormalY() + offsetY);
                             } else {
                                 tempPath.endLine();
                             }
                         }
-                        mPencilPaths.add(tempPath);
-                        sendAnnotation(tempPath);
+                        mStampPaths.add(tempPath);
                     }
-                    mStampPaths.clear();
                 }
                 break;
         }
@@ -490,7 +499,8 @@ public class SlideshowView extends View {
             path.setSlideNumber(mCurrentSlide);
             path.setmColor(mColor);
             mStamp.add(path);
-            mPenStroke = Constants.STAMP_ID;
+            mStampPaths.add(path);
+            confirmedFlag = false;
 //            mPencilPaths.add(path);
 //            sendAnnotation(path);
         }
@@ -507,7 +517,7 @@ public class SlideshowView extends View {
         );
         while (iterator.hasNext()) {
             Point tempPoint = iterator.next();
-            if (tempPoint.getX() > 0) {
+            if (!Float.isNaN(tempPoint.getNormalX())) {
                 btHandler.handleMessage(
                         btHandler.obtainMessage(Constants.SEND_PEN_MOVE, tempPoint)
                 );
@@ -519,5 +529,55 @@ public class SlideshowView extends View {
                 );
             }
         }
+    }
+
+    // These three functions are about zooming the stamp.
+    public void zoomOut() {
+        zoom(0.9f);
+    }
+    public void zoomIn() {
+        zoom(1.1f);
+    }
+
+    public void zoom(float ratio) {
+        if (mStampPaths != null) {
+            ArrayList<MyPath> tempStamp = new ArrayList<>();
+            for (MyPath path : mStampPaths) {
+                Vector<Point> points = path.getPoints();
+                MyPath tempPath = new MyPath(mCurrentSlide);
+                MyPath stampPath = new MyPath(mCurrentSlide);
+                tempPath.moveTo(points.firstElement().getNormalX() * ratio + (1 - ratio) * getWidth()/2, points.firstElement().getNormalY() * ratio + (1 - ratio) * getWidth()/2);
+                stampPath.moveTo(points.firstElement().getNormalX() * ratio + (1 - ratio) * getWidth()/2, points.firstElement().getNormalY() * ratio + (1 - ratio) * getWidth()/2);
+                for (Point point: points) {
+                    if (point.getNormalX() >= 0) {
+                        tempPath.lineTo(point.getNormalX() * ratio + (1 - ratio) * getWidth()/2,  point.getNormalY() * ratio + (1 - ratio) * getWidth()/2);
+                        stampPath.lineTo(point.getNormalX() * ratio + (1 - ratio) * getWidth()/2, point.getNormalY() * ratio + (1 - ratio) * getWidth()/2);
+                    } else {
+                        tempPath.endLine();
+                        stampPath.endLine();
+                    }
+                }
+                mStampPaths.clear();
+                mStampPaths.add(tempPath);
+                tempStamp.clear();
+                tempStamp.add(stampPath);
+            }
+            mStamp = tempStamp;
+        }
+    }
+
+    public void confirm() {
+        confirmedFlag = true;
+        for(MyPath path: mStampPaths) {
+            sendAnnotation(path);
+            mPencilPaths.add(path);
+        }
+        mStampPaths.clear();
+        mStamp.clear();
+    }
+    public void cancel() {
+        confirmedFlag = true;
+        mStamp.clear();
+        mStampPaths.clear();
     }
 }
