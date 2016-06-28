@@ -44,6 +44,6 @@ public class TabletPointServer {
             MSPowerPoint.savePresentationAsJPG(temp.getAbsolutePath());
         }
         SPPServer server = new SPPServer();
-        server.run();
+        new Thread(server).run();
     }
 }

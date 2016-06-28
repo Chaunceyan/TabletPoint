@@ -32,7 +32,7 @@ public class SPPServer extends Thread {
             streamConnNotifier = (StreamConnectionNotifier) Connector.open( connectionString );
             StreamConnection streamConnection = streamConnNotifier.acceptAndOpen();
             ConnectionThread connectionThread = new ConnectionThread(streamConnection);
-            connectionThread.run();
+            new Thread(connectionThread).start();
 
         } catch (IOException e) {
             e.printStackTrace();

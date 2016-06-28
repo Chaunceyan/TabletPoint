@@ -143,7 +143,7 @@ public class PresentationFragment extends Fragment {
                 for (int index = 0; index < previewList.getChildCount(); index++) {
                     previewList.getChildAt(index).setAlpha(1);
                 }
-                previewList.getChildAt(slideshowView.mCurrentSlide + 1).setAlpha(0.5f);
+                previewList.getChildAt(slideshowView.mCurrentSlide-1).setAlpha(0.5f);
             }
         });
 
@@ -157,7 +157,7 @@ public class PresentationFragment extends Fragment {
                 for (int index = 0; index < previewList.getChildCount(); index++) {
                     previewList.getChildAt(index).setAlpha(1);
                 }
-                previewList.getChildAt(slideshowView.mCurrentSlide + 1).setAlpha(0.5f);
+                previewList.getChildAt(slideshowView.mCurrentSlide-1).setAlpha(0.5f);
             }
         });
 

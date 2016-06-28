@@ -207,15 +207,14 @@ public class SlideshowView extends View {
 
     private void handleStampEvent(MotionEvent event) {
         float x = event.getX(), y = event.getY();
-
-        mStampPaths.clear();
+        mStampPaths = new ArrayList<>();
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 if (mStamp != null) {
+                    float offsetX = x - mStamp.get(0).getPoints().firstElement().getNormalX();
+                    float offsetY = y - mStamp.get(0).getPoints().firstElement().getNormalY();
                     for (MyPath path : mStamp) {
                         Vector<Point> points = path.getPoints();
-                        float offsetX = x - points.firstElement().getNormalX();
-                        float offsetY = y - points.firstElement().getNormalY();
                         MyPath tempPath = new MyPath(mCurrentSlide);
                         tempPath.moveTo(points.firstElement().getNormalX() + offsetX, points.firstElement().getNormalY() + offsetY);
                         for (Point point: points) {
@@ -230,11 +229,11 @@ public class SlideshowView extends View {
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (mStamp != null) {
+                 if (mStamp != null) {
+                    float offsetX = x - mStamp.get(0).getPoints().firstElement().getNormalX();
+                    float offsetY = y - mStamp.get(0).getPoints().firstElement().getNormalY();
                     for (MyPath path : mStamp) {
                         Vector<Point> points = path.getPoints();
-                        float offsetX = x - points.firstElement().getNormalX();
-                        float offsetY = y - points.firstElement().getNormalY();
                         MyPath tempPath = new MyPath(mCurrentSlide);
                         tempPath.moveTo(points.firstElement().getNormalX() + offsetX, points.firstElement().getNormalY() + offsetY);
                         for (Point point: points) {
@@ -250,10 +249,10 @@ public class SlideshowView extends View {
                 break;
             case MotionEvent.ACTION_UP:
                 if (mStamp != null) {
+                    float offsetX = x - mStamp.get(0).getPoints().firstElement().getNormalX();
+                    float offsetY = y - mStamp.get(0).getPoints().firstElement().getNormalY();
                     for (MyPath path : mStamp) {
                         Vector<Point> points = path.getPoints();
-                        float offsetX = x - points.firstElement().getNormalX();
-                        float offsetY = y - points.firstElement().getNormalY();
                         MyPath tempPath = new MyPath(mCurrentSlide);
                         tempPath.moveTo(points.firstElement().getNormalX() + offsetX, points.firstElement().getNormalY() + offsetY);
                         for (Point point: points) {
@@ -286,20 +285,24 @@ public class SlideshowView extends View {
                 );
                 break;
             case MotionEvent.ACTION_MOVE:
-                mTempPath.lineTo(x, y);
-                btHandler.handleMessage(
-                        btHandler.obtainMessage(Constants.SEND_PEN_MOVE, new Point(x, y))
-                );
+                if (mTempPath != null) {
+                    mTempPath.lineTo(x, y);
+                    btHandler.handleMessage(
+                            btHandler.obtainMessage(Constants.SEND_PEN_MOVE, new Point(x, y))
+                    );
+                }
                 break;
             case MotionEvent.ACTION_UP:
-                mTempPath.lineTo(x, y);
-                btHandler.handleMessage(
-                        btHandler.obtainMessage(Constants.SET_COLOR, mColor)
-                );
-                btHandler.handleMessage(
-                        btHandler.obtainMessage(Constants.SEND_PEN_UP, new Point(x, y))
-                );
-                magicClean(x, y);
+                if (mTempPath != null) {
+                    mTempPath.lineTo(x, y);
+                    btHandler.handleMessage(
+                            btHandler.obtainMessage(Constants.SET_COLOR, mColor)
+                    );
+                    btHandler.handleMessage(
+                            btHandler.obtainMessage(Constants.SEND_PEN_UP, new Point(x, y))
+                    );
+                    magicClean(x, y);
+                }
         }
         this.invalidate();
     }
@@ -388,8 +391,6 @@ public class SlideshowView extends View {
                 mPath.setmColor(mColor);
                 mX = x; mY = y;
                 mPenPaths.add(mPath);
-                btHandler.handleMessage(
-                        btHandler.obtainMessage(Constants.SEND_PEN_DOWN, new Point(x, y)));
                 break;
             case MotionEvent.ACTION_MOVE:
                 mPath.rewind();
@@ -409,6 +410,8 @@ public class SlideshowView extends View {
                 mPath.lineTo(mX, y);
                 mPath.lineTo(mX, mY);
                 mPath.endLine();
+                btHandler.handleMessage(
+                        btHandler.obtainMessage(Constants.SEND_PEN_DOWN, new Point(mX, mY)));
                 btHandler.handleMessage(
                         btHandler.obtainMessage(Constants.SEND_PEN_MOVE, new Point(x, mY)));
                 btHandler.handleMessage(
@@ -546,8 +549,8 @@ public class SlideshowView extends View {
                 Vector<Point> points = path.getPoints();
                 MyPath tempPath = new MyPath(mCurrentSlide);
                 MyPath stampPath = new MyPath(mCurrentSlide);
-                tempPath.moveTo(points.firstElement().getNormalX() * ratio + (1 - ratio) * getWidth()/2, points.firstElement().getNormalY() * ratio + (1 - ratio) * getWidth()/2);
-                stampPath.moveTo(points.firstElement().getNormalX() * ratio + (1 - ratio) * getWidth()/2, points.firstElement().getNormalY() * ratio + (1 - ratio) * getWidth()/2);
+                tempPath.moveTo(points.firstElement().getNormalX() * ratio + (1 - ratio) * getWidth() / 2, points.firstElement().getNormalY() * ratio + (1 - ratio) * getWidth() / 2);
+                stampPath.moveTo(points.firstElement().getNormalX() * ratio + (1 - ratio) * getWidth() / 2, points.firstElement().getNormalY() * ratio + (1 - ratio) * getWidth() / 2);
                 for (Point point: points) {
                     if (point.getNormalX() >= 0) {
                         tempPath.lineTo(point.getNormalX() * ratio + (1 - ratio) * getWidth()/2,  point.getNormalY() * ratio + (1 - ratio) * getWidth()/2);
@@ -557,12 +560,10 @@ public class SlideshowView extends View {
                         stampPath.endLine();
                     }
                 }
-                mStampPaths.clear();
-                mStampPaths.add(tempPath);
-                tempStamp.clear();
                 tempStamp.add(stampPath);
             }
             mStamp = tempStamp;
+            mStampPaths = tempStamp;
         }
     }
 

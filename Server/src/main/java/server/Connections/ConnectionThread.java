@@ -1,7 +1,9 @@
 package server.Connections;
 
+import com.intel.bluetooth.BlueCoveImpl;
 import com.sun.org.apache.xpath.internal.SourceTree;
 import image_produce.ScreenCapture;
+import server.SPPServer;
 import util.XMLWriter;
 import util.constants.Commands;
 import util.constants.Constants;
@@ -9,8 +11,11 @@ import util.powerpoint.MSPowerPoint;
 import util.powerpoint.interfaces.PpSlideShowPointerType;
 
 import javax.bluetooth.RemoteDevice;
+import javax.bluetooth.UUID;
 import javax.imageio.*;
+import javax.microedition.io.Connector;
 import javax.microedition.io.StreamConnection;
+import javax.microedition.io.StreamConnectionNotifier;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -124,10 +129,22 @@ public class ConnectionThread implements Runnable {
                             System.out.println("Putting commands into queue");
                             queue.add(command);
                         }
+                    } else {
+                        BlueCoveImpl.shutdown();
+                        System.out.println("New Connection");
+                        SPPServer server = new SPPServer();
+                        (new Thread(server)).start();
+                        System.out.println("New Connection Running");
+                        return ;
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                        BlueCoveImpl.shutdown();
+                        System.out.println("New Connection");
+                        SPPServer server = new SPPServer();
+                        (new Thread(server)).start();
+                        System.out.println("New Connection Running");
+                        return ;
             }
         }
 
